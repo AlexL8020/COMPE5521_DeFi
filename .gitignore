@@ -1,0 +1,93 @@
+# --- Generic Node.js / React Project Ignores ---
+# These patterns will apply within any subdirectory
+
+# --- Dependencies ---
+# Ignore node_modules directory found anywhere within subdirectories
+**/node_modules/
+
+# Ignore Yarn Plug'n'Play files (optional)
+**/.pnp.*
+**/.yarn/*
+!**/.yarn/patches
+!**/.yarn/plugins
+!**/.yarn/releases
+!**/.yarn/sdks
+!**/.yarn/versions
+
+# --- Build Output ---
+# Ignore common build directories found anywhere within subdirectories
+**/build/
+**/dist/
+**/out/
+**/.next/
+**/.vercel/
+**/*.js.map
+**/*.css.map
+
+# --- Logs ---
+# Ignore log files found anywhere within subdirectories
+**/logs/
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# --- Environment Variables ---
+# Ignore environment variable files found anywhere - DO NOT COMMIT THESE!
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/.env.*.local
+
+# Keep template/example env files (if you have them)
+# !**/.env.example
+# !**/.env.template
+
+# --- Testing & Coverage ---
+# Ignore test reports and coverage output found anywhere within subdirectories
+**/coverage/
+**/junit.xml
+**/*.lcov
+
+# --- IDE / Editor Specific ---
+# Ignore common IDE/editor config directories found anywhere within subdirectories
+**/.idea/
+**/.vscode/
+# To share specific VS Code settings within any project, un-ignore them:
+# !**/.vscode/settings.json
+# !**/.vscode/tasks.json
+# !**/.vscode/launch.json
+# !**/.vscode/extensions.json
+**/*.sublime-project
+**/*.sublime-workspace
+
+# --- Temporary Files & Cache ---
+**/.cache/
+**/*.tmp
+**/*.temp
+
+# --- Miscellaneous ---
+**/*.graphql.schema.json
+**/schema.graphql
+
+
+# === Global Ignores (Apply everywhere, including the root) ===
+# These usually don't need the '**/' prefix
+
+# --- Operating System Files ---
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo
+
+# --- Other global ignores if needed ---
+# e.g., top-level log files not specific to a sub-project
+# *.log
