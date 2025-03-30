@@ -6,44 +6,35 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # target: development # Optional: Use a specific stage for dev if needed
-    container_name: my-ts-app-container
+    container_name: my-ts-app-container # Revert name if changed
     ports:
-      - "${APP_PORT:-3000}:${PORT:-3000}" # Map host port to container port
+      - "${APP_PORT:-3000}:${PORT:-3000}" # Use variables from .env
     environment:
-      # Pass environment variables to the Node.js application container
-      MONGODB_URI: "mongodb://${MONGO_USER:-user}:${MONGO_PASSWORD:-password}@mongo:27017"
-      MONGODB_DB_NAME: "${MONGO_DB_NAME:-myDockerTSDB}"
-      PORT: "${PORT:-3000}" # Port the app listens on inside the container
-      NODE_ENV: "${NODE_ENV:-development}" # Set Node environment
-      # Add any other necessary environment variables
-      MONGO_USER: "${MONGO_USER:-user}" # Pass mongo creds if needed elsewhere
-      MONGO_PASSWORD: "${MONGO_PASSWORD:-password}"
+      # Use variables resolved by Docker Compose (from .env or defaults)
+      MONGODB_URI: "mongodb://${MONGO_USER:-user}:${MONGO_PASSWORD:-password}@mongo:27017" # Base URI
+      MONGODB_DB_NAME: "${MONGODB_DB_NAME:-myDockerTSDB}"
+      PORT: "${PORT:-3000}"
+      NODE_ENV: "${NODE_ENV:-development}"
+      MONGO_USER: "${MONGO_USER:-user}" # Pass resolved value
+      MONGO_PASSWORD: "${MONGO_PASSWORD:-password}" # Pass resolved value
     volumes:
-      # Mount local code into the container for development hot-reloading
-      # Be careful with node_modules volume in TS projects, might conflict
-      - ./src:/usr/src/app/src # Mount only src for TS changes
-      # If using nodemon + ts-node, changes in src will trigger restart
-      # If using tsc --watch + nodemon dist, changes in src trigger tsc, which updates dist, triggering nodemon
-      # - /usr/src/app/node_modules # Keep container's node_modules separate
+      - ./src:/usr/src/app/src
     depends_on:
       - mongo
-    # Use ts-node for development hot-reloading (simpler)
-    # Ensure nodemon is installed (`npm i --save-dev nodemon`)
-    # Ensure ts-node is installed (`npm i --save-dev ts-node`)
-    command: npm run dev:tsnode # Use the ts-node dev script
+    # command: npm run dev:tsnode # Keep if you want nodemon, remove for production CMD
 
   mongo:
     image: mongo:latest
-    container_name: my-mongo-db-ts
+    container_name: my-mongo-db-ts # Revert name if changed
     ports:
-      # - "27017:27017" # Uncomment to access mongo from host machine
+      - "27017:27017"
     environment:
+      # Use the SAME variables resolved by Docker Compose for initialization
       MONGO_INITDB_ROOT_USERNAME: "${MONGO_USER:-user}"
       MONGO_INITDB_ROOT_PASSWORD: "${MONGO_PASSWORD:-password}"
     volumes:
-      - mongodata_ts:/data/db
+      - mongodata_ts:/data/db # <-- Use original volume name
 
 volumes:
-  mongodata_ts:
+  mongodata_ts: # <-- Use original volume name
     driver: local

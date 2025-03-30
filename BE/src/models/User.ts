@@ -1,16 +1,16 @@
 // src/models/User.ts
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-// Interface representing a document in MongoDB.
 export interface IUser extends Document {
   name: string;
-  email: string;
-  age?: number; // Optional field
+  email?: string; // Make email optional if login is wallet-based
+  profilePictureUrl?: string;
+  bio?: string;
+  walletAddress: string; // Link to blockchain identity
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Schema definition corresponding to the IUser interface.
 const userSchema: Schema<IUser> = new Schema(
   {
     name: {
@@ -20,26 +20,36 @@ const userSchema: Schema<IUser> = new Schema(
     },
     email: {
       type: String,
-      required: [true, "User email is required"],
+      // required: false, // Only require if using email login too
       unique: true,
+      sparse: true, // Allows multiple null/undefined emails but unique if present
       lowercase: true,
       trim: true,
-      match: [/.+\@.+\..+/, "Please fill a valid email address"], // Basic email format validation
+      match: [/.+\@.+\..+/, "Please fill a valid email address"],
     },
-    age: {
-      type: Number,
-      min: [0, "Age cannot be negative"],
+    profilePictureUrl: {
+      type: String,
+      trim: true,
+    },
+    bio: {
+      type: String,
+      trim: true,
+    },
+    walletAddress: {
+      // Indexed for potential lookups
+      type: String,
+      required: [true, "Wallet address is required"],
+      unique: true, // Each user profile should map to one unique wallet
+      trim: true,
+      // Add validation for address format if desired (e.g., regex)
+      // match: [/^0x[a-fA-F0-9]{40}$/, 'Invalid wallet address format']
     },
   },
   {
-    // Add timestamps (createdAt, updatedAt) automatically
     timestamps: true,
-  },
+  }
 );
 
-// Create and export the Mongoose model.
-// The third argument 'users' explicitly sets the collection name.
-// If omitted, Mongoose defaults to the plural, lowercased version of the model name ('User' -> 'users').
-const User: Model<IUser> = mongoose.model<IUser>("User", userSchema, "users");
+const User: Model<IUser> = mongoose.model<IUser>("User", userSchema); // Collection: 'users'
 
 export default User;
