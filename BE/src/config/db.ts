@@ -2,37 +2,46 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
-dotenv.config(); // Load .env file variables
+dotenv.config(); // Load .env file variables (primarily for non-Docker runs)
 
-const mongoUri = process.env.MONGODB_URI;
+// Read variables passed by Docker Compose environment
+const mongoUri_base = process.env.MONGODB_URI; // Reads base URI e.g., mongodb://user:pass@mongo:27017
 const dbName = process.env.MONGODB_DB_NAME;
 
-if (!mongoUri) {
+if (!mongoUri_base) {
   console.error(
-    "FATAL ERROR: MONGODB_URI environment variable is not defined.",
+    "FATAL ERROR: MONGODB_URI environment variable is not defined."
   );
-  process.exit(1); // Exit if URI is not set
+  process.exit(1);
 }
 
-// Construct the full URI if dbName is provided, otherwise use the base URI
-// Atlas URIs often include a default DB, but this allows overriding/specifying
-const fullUri = dbName
-  ? `${mongoUri}/${dbName}?retryWrites=true&w=majority`
-  : mongoUri;
+// Construct the full URI: Append DB name and explicitly add authSource=admin
+// Ensure base URI doesn't already contain query params before appending
+const baseUri = mongoUri_base.split("?")[0];
+const dbPart = dbName ? `/${dbName}` : "";
+// Define standard options, including authSource
+const optionsPart = "?authSource=admin&retryWrites=true&w=majority";
+
+const fullUri = `${baseUri}${dbPart}${optionsPart}`;
 
 export const connectDB = async (): Promise<void> => {
   try {
-    // Log the URI without credentials for debugging (be careful in production logs)
-    const uriToLog = mongoUri.replace(
+    const uriToLog = mongoUri_base.replace(
       /\/\/([^:]+):([^@]+)@/,
-      "//<username>:<password>@",
+      "//<username>:<password>@"
     );
-    console.log(`Attempting to connect to MongoDB at: ${uriToLog}`);
+    console.log(`Base URI from env: ${uriToLog}`);
+    console.log(
+      `Attempting to connect with full URI: ${fullUri.replace(
+        /\/\/([^:]+):([^@]+)@/,
+        "//<username>:<password>@"
+      )}`
+    ); // Log full URI safely
     if (dbName) {
-      console.log(`Database name: ${dbName}`);
+      console.log(`Target Database name: ${dbName}`);
     }
 
-    await mongoose.connect(fullUri);
+    await mongoose.connect(fullUri); // Use the explicitly constructed URI
 
     console.log("MongoDB connected successfully using Mongoose!");
 
@@ -45,7 +54,6 @@ export const connectDB = async (): Promise<void> => {
     });
   } catch (err) {
     console.error(`Failed to connect to MongoDB: ${err}`);
-    // Exit process on initial connection failure
     process.exit(1);
   }
 };
