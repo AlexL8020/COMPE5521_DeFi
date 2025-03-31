@@ -1,9 +1,15 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Filter } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function CampaignsPage() {
   return (
@@ -11,13 +17,9 @@ export default function CampaignsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">Browse Campaigns</h1>
-          <p className="text-muted-foreground">Discover student campaigns from around the world</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <ThemeToggle />
-          <Link href="/campaigns/create">
-            <Button>Start a Campaign</Button>
-          </Link>
+          <p className="text-muted-foreground">
+            Discover student campaigns from around the world
+          </p>
         </div>
       </div>
 
@@ -51,7 +53,9 @@ export default function CampaignsPage() {
             <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
               <div className="aspect-video relative bg-muted">
                 <img
-                  src={`/placeholder.svg?height=225&width=400&text=Campaign+${i + 1}`}
+                  src={`/placeholder.svg?height=225&width=400&text=Campaign+${
+                    i + 1
+                  }`}
                   alt={`Campaign ${i + 1}`}
                   className="object-cover w-full h-full"
                 />
@@ -61,26 +65,32 @@ export default function CampaignsPage() {
                   {i % 3 === 0
                     ? `Computer Science Degree ${i + 1}`
                     : i % 3 === 1
-                      ? `Research Project ${i + 1}`
-                      : `Student Startup ${i + 1}`}
+                    ? `Research Project ${i + 1}`
+                    : `Student Startup ${i + 1}`}
                 </h3>
                 <p className="text-muted-foreground text-sm mb-4">
                   {i % 3 === 0
                     ? "Help me complete my degree and build open-source tools."
                     : i % 3 === 1
-                      ? "Supporting innovative research in an emerging field."
-                      : "Building a platform to solve real-world problems."}
+                    ? "Supporting innovative research in an emerging field."
+                    : "Building a platform to solve real-world problems."}
                 </p>
                 <div className="space-y-2">
                   <div className="w-full bg-muted rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full"
-                      style={{ width: `${Math.floor(Math.random() * 80 + 20)}%` }}
+                      style={{
+                        width: `${Math.floor(Math.random() * 80 + 20)}%`,
+                      }}
                     ></div>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="font-medium">{(Math.random() * 5).toFixed(2)} ETH raised</span>
-                    <span className="text-muted-foreground">{Math.floor(Math.random() * 80 + 20)}% of 5 ETH</span>
+                    <span className="font-medium">
+                      {(Math.random() * 5).toFixed(2)} ETH raised
+                    </span>
+                    <span className="text-muted-foreground">
+                      {Math.floor(Math.random() * 80 + 20)}% of 5 ETH
+                    </span>
                   </div>
                 </div>
               </div>
@@ -106,6 +116,5 @@ export default function CampaignsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

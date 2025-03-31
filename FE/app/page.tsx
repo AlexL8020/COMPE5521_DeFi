@@ -1,54 +1,12 @@
-"use client";
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, GraduationCap, Globe, Lightbulb } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import WalletLogin from "@/components/WalletLogin";
-import { getServerSession } from "next-auth/next";
 
 export default function Home() {
-  // const session = await getServerSession();
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="border-b">
-        <div className="container flex items-center justify-between py-4">
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <GraduationCap className="h-6 w-6" />
-            <span>Defi-CrowdFund</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link
-              href="/campaigns"
-              className="text-sm font-medium hover:underline"
-            >
-              Browse Campaigns
-            </Link>
-            <Link
-              href="/how-it-works"
-              className="text-sm font-medium hover:underline"
-            >
-              How It Works
-            </Link>
-            <Link href="/about" className="text-sm font-medium hover:underline">
-              About
-            </Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
-            <Link href="/dashboard">
-              <Button variant="outline" size="sm">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/campaigns/create">
-              <Button size="sm">Start Campaign</Button>
-            </Link>
-            {/* Client-side wallet login component */}
-            <WalletLogin />
-          </div>
-        </div>
-      </header>
       <main>
         <section className="py-20 px-4 text-center bg-gradient-to-b from-background to-muted">
           <div className="container max-w-4xl mx-auto">
