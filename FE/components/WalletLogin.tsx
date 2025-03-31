@@ -2,6 +2,7 @@
 
 import { useWalletAuth } from "../hooks/useWalletAuth";
 import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 export default function WalletLogin() {
   const { connectWallet, disconnectWallet, loading } = useWalletAuth();
@@ -10,16 +11,25 @@ export default function WalletLogin() {
   return (
     <div className="wallet-login">
       {session?.user ? (
-        <div>
-          <p>Connected: {session?.user?.address ?? "--"}</p>
-          <button onClick={disconnectWallet} disabled={loading}>
+        <div className="flex flex-col gap-2">
+          <p>Connected: </p>
+          <p> {session?.user?.address ?? "--"}</p>
+          <Button
+            variant="outline"
+            onClick={disconnectWallet}
+            disabled={loading}
+            size="sm"
+          >
             {loading ? "Disconnecting..." : "Disconnect Wallet"}
-          </button>
+          </Button>
         </div>
       ) : (
-        <button onClick={connectWallet} disabled={loading}>
+        // <button onClick={connectWallet} disabled={loading}>
+        //   {loading ? "Connecting..." : "Connect MetaMask"}
+        // </button>
+        <Button onClick={connectWallet} disabled={loading} size="sm">
           {loading ? "Connecting..." : "Connect MetaMask"}
-        </button>
+        </Button>
       )}
     </div>
   );

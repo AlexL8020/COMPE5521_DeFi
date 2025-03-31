@@ -46,13 +46,6 @@ export default function Home() {
             </Link>
             {/* Client-side wallet login component */}
             <WalletLogin />
-            {/* {session?.user ? (
-              <div>
-                <p>Server confirmed user is logged in</p>
-              </div>
-            ) : (
-              <p>Please connect your wallet to continue</p>
-            )} */}
           </div>
         </div>
       </header>
