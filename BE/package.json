@@ -7,11 +7,14 @@
     "seed": "node dist/seed.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
+    "ethers": "^6.7.0",
     "express": "^4.21.2",
     "mongoose": "^8.13.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
     "@types/node": "^22.13.14",
     "concurrently": "^9.1.2",
