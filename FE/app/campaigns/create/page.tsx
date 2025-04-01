@@ -21,6 +21,7 @@ export default function CreateCampaignPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const { connectWallet, disconnectWallet, loading } = useWalletAuth();
   const { data: session } = useSession();
+  const creatorWallet=session?.user?.address;
   const [formData, setFormData] = useState({
     title: '',
     category: '',
@@ -31,7 +32,7 @@ export default function CreateCampaignPage() {
     aboutYou: '',
     fundingGoal: '',
     duration: '',
-    creatorWallet: session?.user?.address,
+    //creatorWallet: session?.user?.address,
   });
   const nextStep = () => {
     setCurrentStep((prev) => Math.min(prev + 1, 3))
@@ -50,11 +51,27 @@ export default function CreateCampaignPage() {
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files) {
-  //     setFormData((prev) => ({ ...prev, image: e.target.files[0] }));
-  //   }
-  // };
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];  // Get the first selected file
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        // File is an image, process it
+        if (file.size > 1 * 1024 * 1024) {
+          alert('File too large. Max size: 1MB.');
+          return;}
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setFormData((prev) => ({ ...prev, image: reader.result as string }));
+            console.log('Image set:', reader.result);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // File is not an image, notify user and reset input
+          alert('Please select an image file.');
+          e.target.value = '';  // Clear the input so they can try again
+      }
+    }
+  };
 
   // Form submission handler
   const handleSubmit = async () => {
@@ -68,10 +85,11 @@ export default function CreateCampaignPage() {
       aboutYou: formData.aboutYou,
       fundingGoal: formData.fundingGoal,
       duration: formData.duration,
-      creatorWallet: formData.creatorWallet,
+      creatorWallet,
     };
 
     console.log('Submitting JSON:', jsonData);
+    console.log(creatorWallet);
     try {
       
       const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
@@ -84,7 +102,7 @@ export default function CreateCampaignPage() {
       }
       
     );
-      if (response.ok) {
+      if (response.ok && creatorWallet) {
         console.log('Campaign launched successfully');
         // Optional: Reset form or redirect user
       } else {
@@ -171,11 +189,21 @@ export default function CreateCampaignPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="image">Campaign Image</Label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors">
+              <label
+                htmlFor="image"
+                className="block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+              >
                 <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground mb-1">Drag and drop an image, or click to browse</p>
                 <p className="text-xs text-muted-foreground">Recommended size: 1200 x 675 pixels</p>
-              </div>
+              </label>
+              <input
+                type="file"
+                id="image"
+                accept="image/*"  // Restrict to image files only
+                className="hidden"
+                onChange={handleFileChange} // Replace with your actual event handler
+              />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end">
