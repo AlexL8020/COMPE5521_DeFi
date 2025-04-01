@@ -5,6 +5,17 @@
 # Ignore node_modules directory found anywhere within subdirectories
 **/node_modules/
 
+# --- Build Output ---
+
+# And still keep the general pattern
+**/dist/
+**/build/
+**/out/
+**/.next/
+**/.vercel/
+**/*.js.map
+**/*.css.map
+
 # Ignore Yarn Plug'n'Play files (optional)
 **/.pnp.*
 **/.yarn/*
@@ -13,16 +24,6 @@
 !**/.yarn/releases
 !**/.yarn/sdks
 !**/.yarn/versions
-
-# --- Build Output ---
-# Ignore common build directories found anywhere within subdirectories
-**/build/
-**/dist/
-**/out/
-**/.next/
-**/.vercel/
-**/*.js.map
-**/*.css.map
 
 # --- Logs ---
 # Ignore log files found anywhere within subdirectories
@@ -73,7 +74,6 @@
 **/*.graphql.schema.json
 **/schema.graphql
 
-
 # === Global Ignores (Apply everywhere, including the root) ===
 # These usually don't need the '**/' prefix
 
@@ -88,6 +88,36 @@ Desktop.ini
 *.swp
 *.swo
 
-# --- Other global ignores if needed ---
-# e.g., top-level log files not specific to a sub-project
-# *.log
+# --- Node.js Backend Specific Ignores ---
+# Additional patterns specific to the backend at ./Proj/BE
+
+# Backend package locks (if you prefer not to commit these)
+BE/package-lock.json
+BE/yarn.lock
+BE/pnpm-lock.yaml
+
+# Backend runtime data
+BE/pids/
+BE/*.pid
+BE/*.seed
+BE/*.pid.lock
+
+# Backend debug files
+BE/.debug
+
+# Backend temporary files
+BE/tmp/
+BE/temp/
+
+# Backend database files (if applicable)
+BE/*.sqlite
+BE/*.db
+
+# Backend uploads directory (if applicable)
+BE/uploads/
+
+# Backend config backups
+BE/config/*.backup
+
+# Backend generated documentation
+BE/docs/generated/
