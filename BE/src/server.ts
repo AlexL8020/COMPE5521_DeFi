@@ -6,6 +6,9 @@ import userRoutes from "./routes/userRoutes"; // Import the user routes
 import register from "./routes/register";
 import campaign from "./routes/campaign";
 import cors from "cors";
+import bodyParser from "body-parser"
+
+
 
 // Load environment variables
 dotenv.config();
@@ -17,6 +20,7 @@ connectDB(); // Call connectDB which handles connection and errors
 const app: Express = express();
 const port = process.env.PORT || 5000;
 
+app.use(bodyParser.json({limit: '1500kb'}));
 // --- Middleware ---
 app.use(cors());
 // Parse JSON bodies
@@ -33,6 +37,8 @@ const corsOptions ={
   "Access-Control-Request-Headers": 'Content-Type',
   
 }
+
+
 
 //app.use(cors()) // Use this after the variable declaration
 app.use(cors(corsOptions)) // Use this after the variable declaration
