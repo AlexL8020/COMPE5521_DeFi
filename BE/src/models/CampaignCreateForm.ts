@@ -19,60 +19,60 @@ const userSchema: Schema<ICampaignCreateForm> = new Schema(
   {
     title: {
       type: String,
-      //required: [true, "title name is required"],
+      required: [true, "title name is required"],
       trim: true,
     },
 
     category: {
         type: String,
-        //required: [true, "category name is required"],
+        required: [true, "category name is required"],
         trim: true,
       },
 
     shortDescription: {
         type: String,
-        //required: [true, "shortDescription is required"],
+        required: [true, "shortDescription is required"],
         trim: true,
       },
 
     image: {
         type: Object,
-        //required: [true, "image is required"],
+        required: [true, "image is required"],
         trim: true,
       },
   
     fullDescription: {
         type: String,
-        //required: [true, "fullDescription is required"],
+        required: [true, "fullDescription is required"],
         trim: true,
         },
   
     timeline: {
         type: String,
-        //required: [true, "timeline is required"],
+        required: [true, "timeline is required"],
         trim: true,
         },
 
     aboutYou: {
         type: String,
-        //required: [true, "aboutYou is required"],
+        required: [true, "aboutYou is required"],
         trim: true,
         },
       
     fundingGoal: {
         type: String,
-        //required: [true, "fundingGoal is required"],
+        required: [true, "fundingGoal is required"],
         trim: true,
     },
       
     duration: {
         type: String,
-        //required: [true, "duration is required"],
+        required: [true, "duration is required"],
         trim: true,
     },
     creatorWallet: {
         type: String,
-        //required: [true, "duration is required"],
+        required: [true, "Connection to wallet is required"],
         trim: true,
     },
     
