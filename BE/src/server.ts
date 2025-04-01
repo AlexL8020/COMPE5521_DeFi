@@ -3,6 +3,9 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import { connectDB, closeDB } from "./config/db";
 import userRoutes from "./routes/userRoutes"; // Import the user routes
+import register from "./routes/register";
+import campaign from "./routes/campaign";
+import cors from "cors";
 
 // Load environment variables
 dotenv.config();
@@ -10,14 +13,28 @@ dotenv.config();
 // Connect to Database
 connectDB(); // Call connectDB which handles connection and errors
 
+//const cors = require("cors");
 const app: Express = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // --- Middleware ---
 // Parse JSON bodies
 app.use(express.json());
 // Parse URL-encoded bodies
 app.use(express.urlencoded({ extended: true }));
+
+const corsOptions ={
+  origin:'*', 
+  //credentials:true,            //access-control-allow-credentials:true
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  preflightContinue: false,
+  optionSuccessStatus:200,
+  "Access-Control-Request-Headers": 'Content-Type',
+  
+}
+
+//app.use(cors()) // Use this after the variable declaration
+app.use(cors(corsOptions)) // Use this after the variable declaration
 
 // --- Routes ---
 // Basic root route
@@ -27,6 +44,8 @@ app.get("/", (req: Request, res: Response) => {
 
 // Mount User routes
 app.use("/api/v1/users", userRoutes); // Use a base path like /api/v1
+app.use("/api/v1/register", register);
+app.use("/api/v1/campaign", campaign);
 
 // --- Basic Error Handling Middleware (Example) ---
 // Place after all routes

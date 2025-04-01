@@ -40,19 +40,19 @@ const campaignMetadataSchema: Schema<ICampaignMetadata> = new Schema(
       ref: "User", // Reference the 'User' model
       required: true,
     },
-    title: {
+    title: {  //1.Campaign Title
       type: String,
       required: true,
       trim: true,
     },
-    description: {
+    description: { //3.Short Description
       type: String,
       required: true,
       trim: true,
     },
-    imageUrl: { type: String, trim: true },
+    imageUrl: { type: String, trim: true }, //4.Campaign Image
     videoUrl: { type: String, trim: true },
-    category: { type: String, trim: true },
+    category: { type: String, trim: true },  //2.Category
     updates: [
       {
         message: String,

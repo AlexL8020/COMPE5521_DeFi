@@ -7,15 +7,17 @@ import { demoUsersSeed, demoCampaignsSeed } from "./config/seedData"; // Import 
 
 dotenv.config(); // Load .env variables
 
-const mongoUri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB_NAME;
+//const mongoUri = process.env.MONGODB_URI;
+const mongoUri = "mongodb://localhost:27017/DeFi";
+//const dbName = process.env.MONGODB_DB_NAME;
+const dbName = "DeFi";
 
-if (!mongoUri) {
-  console.error(
-    "FATAL ERROR: MONGODB_URI environment variable is not defined for seeding."
-  );
-  process.exit(1);
-}
+// if (!mongoUri) {
+//   console.error(
+//     "FATAL ERROR: MONGODB_URI environment variable is not defined for seeding."
+//   );
+//   process.exit(1);
+// }
 
 // Add authSource=admin for consistency
 const baseUri = mongoUri.split("?")[0];
@@ -28,7 +30,8 @@ const connectAndSeed = async () => {
   try {
     console.log("Attempting to connect to MongoDB for seeding...");
     // Use createConnection to get a connection object we can close reliably
-    connection = await mongoose.createConnection(fullUri).asPromise();
+    //connection = await mongoose.createConnection(fullUri).asPromise();
+    connection = await mongoose.createConnection(mongoUri).asPromise();
     console.log("MongoDB connected for seeding.");
 
     // Get models from the specific connection
