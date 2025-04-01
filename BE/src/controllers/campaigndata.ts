@@ -8,7 +8,7 @@ const app = express();
 
 app.use(cors());
 
-interface CreateNewCampaignBody {
+interface CreateNewCampaignBody {  //record to database
       title: string;
       category: string;
       shortDescription: string;
@@ -57,3 +57,46 @@ interface CreateNewCampaignBody {
       // Or: next(error); // If using error handling middleware
     }
   };
+
+  export const getCampaigns = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const campagins: ICampaignCreateForm[] = await CampaignCreateForm.find({}); // Fetch all users
+      res.status(200).json(campagins);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+      // Or: next(error);
+    }
+  };
+
+  export const getCampaignByID = async (
+    req: Request<{ id: string }>, // Type the route parameter 'id'
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+  try {
+    const campaignId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+      res.status(400).json({ message: "Invalid user ID format" });
+      return;
+    }
+
+    const campaign = await CampaignCreateForm.findById(campaignId);
+
+    if (!campaign) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.status(200).json(campaign);
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    res.status(500).json({ message: "Failed to fetch user" });
+    // Or: next(error);
+  }
+};
+
