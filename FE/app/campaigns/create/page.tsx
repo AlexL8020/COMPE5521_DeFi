@@ -12,9 +12,27 @@ import { AlertCircle, Upload, Info } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ThemeToggle } from "@/components/theme-toggle"
 
+import { API_CONFIG } from '../../API'; // Adjust path as needed
+
+import { useWalletAuth } from "../../../hooks/useWalletAuth";
+import { useSession } from "next-auth/react";
+
 export default function CreateCampaignPage() {
   const [currentStep, setCurrentStep] = useState(1)
-
+  const { connectWallet, disconnectWallet, loading } = useWalletAuth();
+  const { data: session } = useSession();
+  const [formData, setFormData] = useState({
+    title: '',
+    category: '',
+    shortDescription: '',
+    image: null as File | null,
+    fullDescription: '',
+    timeline: '',
+    aboutYou: '',
+    fundingGoal: '',
+    duration: '',
+    creatorWallet: session?.user?.address,
+  });
   const nextStep = () => {
     setCurrentStep((prev) => Math.min(prev + 1, 3))
   }
@@ -22,6 +40,60 @@ export default function CreateCampaignPage() {
   const prevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSelectChange = (id: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files) {
+  //     setFormData((prev) => ({ ...prev, image: e.target.files[0] }));
+  //   }
+  // };
+
+  // Form submission handler
+  const handleSubmit = async () => {
+    const jsonData = {
+      title: formData.title,
+      category: formData.category,
+      shortDescription: formData.shortDescription,
+      image: formData.image || 'default-image-url', // Use base64 or placeholder
+      fullDescription: formData.fullDescription,
+      timeline: formData.timeline,
+      aboutYou: formData.aboutYou,
+      fundingGoal: formData.fundingGoal,
+      duration: formData.duration,
+      creatorWallet: formData.creatorWallet,
+    };
+
+    console.log('Submitting JSON:', jsonData);
+    try {
+      
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':'application/json'
+          //'Content-Type':'application/x-www-form-urlencoded'
+          },
+        body: JSON.stringify(jsonData),
+      }
+      
+    );
+      if (response.ok) {
+        console.log('Campaign launched successfully');
+        // Optional: Reset form or redirect user
+      } else {
+        console.error('Failed to launch campaign (frontend)');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
+  };
 
   return (
     <div className="container py-8 max-w-3xl">
@@ -69,11 +141,12 @@ export default function CreateCampaignPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">Campaign Title</Label>
-              <Input id="title" placeholder="Enter a clear, specific title for your campaign" />
+              <Input id="title" placeholder="Enter a clear, specific title for your campaign" value={formData.title}
+                onChange={handleInputChange} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select>
+              <Select value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
@@ -86,11 +159,14 @@ export default function CreateCampaignPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="short-description">Short Description</Label>
+              <Label htmlFor="shortDescription">Short Description</Label>
               <Textarea
-                id="short-description"
+                id="shortDescription"
                 placeholder="Provide a brief summary of your campaign (150 characters max)"
                 className="resize-none"
+                value={formData.shortDescription}
+                onChange={handleInputChange}
+                maxLength={150}
               />
             </div>
             <div className="space-y-2">
@@ -116,7 +192,7 @@ export default function CreateCampaignPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="full-description">Full Description</Label>
+              <Label htmlFor="fullDescription">Full Description</Label>
               <Tabs defaultValue="write">
                 <TabsList className="mb-2">
                   <TabsTrigger value="write">Write</TabsTrigger>
@@ -124,9 +200,11 @@ export default function CreateCampaignPage() {
                 </TabsList>
                 <TabsContent value="write">
                   <Textarea
-                    id="full-description"
+                    id="fullDescription"
                     placeholder="Tell your story. Why are you raising funds? What will you use them for? How will backers benefit?"
                     className="min-h-[200px] resize-none"
+                    value={formData.fullDescription}
+                    onChange={handleInputChange}
                   />
                 </TabsContent>
                 <TabsContent value="preview">
@@ -145,14 +223,18 @@ export default function CreateCampaignPage() {
                 id="timeline"
                 placeholder="Outline your educational or project timeline. When will you start? When do you expect to complete your goals?"
                 className="resize-none"
+                value={formData.timeline}
+                onChange={handleInputChange}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="about-you">About You</Label>
+              <Label htmlFor="aboutYou">About You</Label>
               <Textarea
-                id="about-you"
+                id="aboutYou"
                 placeholder="Tell potential backers about yourself, your background, and why you're passionate about this educational goal."
                 className="resize-none"
+                value={formData.aboutYou}
+                onChange={handleInputChange}
               />
             </div>
           </CardContent>
@@ -181,8 +263,9 @@ export default function CreateCampaignPage() {
             </Alert>
 
             <div className="space-y-2">
-              <Label htmlFor="funding-goal">Funding Goal (ETH)</Label>
-              <Input id="funding-goal" type="number" placeholder="5.0" min="0.1" step="0.1" />
+              <Label htmlFor="fundingGoal">Funding Goal (ETH)</Label>
+              <Input id="fundingGoal" type="number" placeholder="5.0" min="0.1" step="0.1" value={formData.fundingGoal}
+                onChange={handleInputChange} />
               <p className="text-xs text-muted-foreground">
                 Set a realistic goal based on your needs. You'll receive all funds raised, even if you don't reach your
                 goal.
@@ -191,7 +274,7 @@ export default function CreateCampaignPage() {
 
             <div className="space-y-2">
               <Label htmlFor="duration">Campaign Duration (Days)</Label>
-              <Select>
+              <Select value={formData.duration} onValueChange={(value) => handleSelectChange('duration', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select duration" />
                 </SelectTrigger>
@@ -219,7 +302,7 @@ export default function CreateCampaignPage() {
             <Button variant="outline" onClick={prevStep}>
               Back
             </Button>
-            <Button>Launch Campaign</Button>
+            <Button onClick={handleSubmit}>Launch Campaign</Button>
           </CardFooter>
         </Card>
       )}
