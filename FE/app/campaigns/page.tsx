@@ -1,3 +1,5 @@
+"use client"; // Add this at the top
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +12,41 @@ import {
 } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useState, useEffect } from 'react';
+import { API_CONFIG } from '../API'; // Your API config file
 
 export default function CampaignsPage() {
+  const [campaigns, setCampaigns] = useState([]); // State to hold fetched campaigns
+    const [loading, setLoading] = useState(true); // Optional: Loading state
+  
+    useEffect(() => {
+      const fetchCampaigns = async () => {
+        try {
+          const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setCampaigns(data.slice(0, 9)); // Limit to 9 campaigns for display
+            setLoading(false);
+          } else {
+            console.error('Failed to fetch campaigns:', response.status);
+          }
+        } catch (error) {
+          console.error('Error fetching campaigns:', error);
+          setLoading(false);
+        }
+      };
+  
+      fetchCampaigns();
+    }, []); // Empty dependency array to run once on mount
+
+
+
+
   return (
     <div className="container py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -47,7 +82,7 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.from({ length: 9 }).map((_, i) => (
           <Link href={`/campaigns/${i + 1}`} key={i} className="group">
             <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
@@ -97,7 +132,68 @@ export default function CampaignsPage() {
             </div>
           </Link>
         ))}
-      </div>
+      </div> */}
+
+        
+              
+              
+                {loading ? (
+                  <p className="text-center">Loading campaigns...</p>
+                ) : (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {campaigns.map((campaign) => {
+                      // Convert progress and fundingGoal to numbers
+                      const progress = Number(campaign.progress);
+                      const fundingGoal = Number(campaign.fundingGoal);
+
+                      // Calculate progress percentage
+                      const progressPercentage = fundingGoal > 0 
+                        ? Math.round((progress / fundingGoal) * 100) 
+                        : 0; // Cap at 100% and handle division by zero
+
+                      return (
+                        <Link href={`/campaigns/${campaign._id}`} key={campaign._id} className="group">
+                          <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
+                            <div className="aspect-video relative bg-muted">
+                              <img
+                                src={campaign.image} // Base64 string from MongoDB
+                                alt={campaign.title}
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                            <div className="p-5">
+                              <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
+                                {campaign.title}
+                              </h3>
+                              <p className="text-muted-foreground text-sm mb-4">
+                                {campaign.shortDescription}
+                              </p>
+                              <div className="space-y-2">
+                                <div className="w-full bg-muted rounded-full h-2">
+                                  <div
+                                    className="bg-primary h-2 rounded-full"
+                                    style={{ width: `${progressPercentage}%` }} // Real progress
+                                  ></div>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="font-medium">
+                                    {progress.toFixed(2)} ETH raised
+                                  </span>
+                                  <span className="text-muted-foreground">
+                                    {progressPercentage.toFixed(0)}% of {fundingGoal} ETH
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              
+           
+
 
       <div className="flex justify-center mt-8">
         <div className="flex gap-1">
