@@ -178,59 +178,67 @@ export default function Home() {
           </div>
         </section> */}
 
-        <section className="py-16 bg-muted">
-              <div className="container">
-                <h2 className="text-3xl font-bold text-center mb-12">
-                  Featured Campaigns
-                </h2>
-                {loading ? (
-                  <p className="text-center">Loading campaigns...</p>
-                ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {campaigns.map((campaign, index) => (
-                      <Link href={`/campaigns/${campaign._id}`} key={campaign._id} className="group">
-                        <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
-                          <div className="aspect-video relative bg-muted">
-                            <img
-                              src={campaign.image} // Base64 string from MongoDB
-                              alt={campaign.title}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div className="p-5">
-                            <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
-                              {campaign.title}
-                            </h3>
-                            <p className="text-muted-foreground text-sm mb-4">
-                              {campaign.shortDescription}
-                            </p>
-                            <div className="space-y-2">
-                              <div className="w-full bg-muted rounded-full h-2">
-                                <div
-                                  className="bg-primary h-2 rounded-full"
-                                  style={{
-                                    width: index === 0 ? '75%' : index === 1 ? '45%' : '60%', // Fake progress
-                                  }}
-                                ></div>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="font-medium">
-                                  {index === 0 ? '3.75 ETH' : index === 1 ? '2.25 ETH' : '3 ETH'} raised
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {index === 0 ? '75%' : index === 1 ? '45%' : '60%'} of {campaign.fundingGoal} ETH
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
+<section className="py-16 bg-muted">
+      <div className="container">
+        <h2 className="text-3xl font-bold text-center mb-12">
+          Featured Campaigns
+        </h2>
+        {loading ? (
+          <p className="text-center">Loading campaigns...</p>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {campaigns.map((campaign) => {
+              // Convert progress and fundingGoal to numbers
+              const progress = Number(campaign.progress);
+              const fundingGoal = Number(campaign.fundingGoal);
 
+              // Calculate progress percentage
+              const progressPercentage = fundingGoal > 0 
+                ? Math.round((progress / fundingGoal) * 100) 
+                : 0; // Cap at 100% and handle division by zero
+
+              return (
+                <Link href={`/campaigns/${campaign._id}`} key={campaign._id} className="group">
+                  <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
+                    <div className="aspect-video relative bg-muted">
+                      <img
+                        src={campaign.image} // Base64 string from MongoDB
+                        alt={campaign.title}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
+                        {campaign.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm mb-4">
+                        {campaign.shortDescription}
+                      </p>
+                      <div className="space-y-2">
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full"
+                            style={{ width: `${progressPercentage}%` }} // Real progress
+                          ></div>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="font-medium">
+                            {progress.toFixed(2)} ETH raised
+                          </span>
+                          <span className="text-muted-foreground">
+                            {progressPercentage.toFixed(0)}% of {fundingGoal} ETH
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
 
 
       </main>
