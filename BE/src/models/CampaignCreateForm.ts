@@ -9,8 +9,11 @@ export interface ICampaignCreateForm extends Document {
     timeline: string;
     aboutYou: string;
     fundingGoal: string;
+   
     duration: string;
     creatorWallet: string;
+    progress: string;
+    
     createdAt: Date;
     updatedAt: Date;
 }
@@ -75,6 +78,13 @@ const userSchema: Schema<ICampaignCreateForm> = new Schema(
         required: [true, "Connection to wallet is required"],
         trim: true,
     },
+    progress: {
+      type: String,
+      default:'0',
+      trim: true,
+  },
+
+    
     
   },
   {

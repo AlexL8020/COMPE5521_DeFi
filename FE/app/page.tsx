@@ -1,10 +1,44 @@
+"use client"; // Add this at the top
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, GraduationCap, Globe, Lightbulb } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import WalletLogin from "@/components/WalletLogin";
+import { useState, useEffect } from 'react';
+import { API_CONFIG } from './API'; // Your API config file
 
 export default function Home() {
+
+  const [campaigns, setCampaigns] = useState([]); // State to hold fetched campaigns
+  const [loading, setLoading] = useState(true); // Optional: Loading state
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCampaigns(data.slice(0, 3)); // Limit to 3 campaigns for display
+          setLoading(false);
+        } else {
+          console.error('Failed to fetch campaigns:', response.status);
+        }
+      } catch (error) {
+        console.error('Error fetching campaigns:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchCampaigns();
+  }, []); // Empty dependency array to run once on mount
+
+
   return (
     <div className="flex flex-col min-h-screen">
       <main>
@@ -74,7 +108,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="py-16 bg-muted">
+        {/* <section className="py-16 bg-muted">
           <div className="container">
             <h2 className="text-3xl font-bold text-center mb-12">
               Featured Campaigns
@@ -142,7 +176,63 @@ export default function Home() {
               </Link>
             </div>
           </div>
-        </section>
+        </section> */}
+
+        <section className="py-16 bg-muted">
+              <div className="container">
+                <h2 className="text-3xl font-bold text-center mb-12">
+                  Featured Campaigns
+                </h2>
+                {loading ? (
+                  <p className="text-center">Loading campaigns...</p>
+                ) : (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {campaigns.map((campaign, index) => (
+                      <Link href={`/campaigns/${campaign._id}`} key={campaign._id} className="group">
+                        <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
+                          <div className="aspect-video relative bg-muted">
+                            <img
+                              src={campaign.image} // Base64 string from MongoDB
+                              alt={campaign.title}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div className="p-5">
+                            <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
+                              {campaign.title}
+                            </h3>
+                            <p className="text-muted-foreground text-sm mb-4">
+                              {campaign.shortDescription}
+                            </p>
+                            <div className="space-y-2">
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-primary h-2 rounded-full"
+                                  style={{
+                                    width: index === 0 ? '75%' : index === 1 ? '45%' : '60%', // Fake progress
+                                  }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="font-medium">
+                                  {index === 0 ? '3.75 ETH' : index === 1 ? '2.25 ETH' : '3 ETH'} raised
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {index === 0 ? '75%' : index === 1 ? '45%' : '60%'} of {campaign.fundingGoal} ETH
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+
+
       </main>
       <footer className="border-t mt-auto">
         <div className="container py-8">
@@ -170,6 +260,16 @@ export default function Home() {
                     Browse Campaigns
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/campaignstest"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Browse Campaigns Test
+                  </Link>
+                </li>
+
+
                 <li>
                   <Link
                     href="/campaigns/create"

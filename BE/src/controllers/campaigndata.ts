@@ -19,6 +19,7 @@ interface CreateNewCampaignBody {  //record to database
       fundingGoal: string;
       duration: string;
       creatorWallet: string;
+      progress: string;
 
   }
 
