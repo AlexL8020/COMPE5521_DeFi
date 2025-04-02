@@ -1,3 +1,9 @@
+"use client";
+
+import { useWalletAuth } from "../../hooks/useWalletAuth";
+import { useSession } from "next-auth/react";
+
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +21,8 @@ import { ArrowUpRight, Edit, Trash2, AlertCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function DashboardPage() {
+  const { connectWallet, disconnectWallet, loading } = useWalletAuth();
+  const { data: session } = useSession();
   return (
     <div className="container py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -215,7 +223,29 @@ export default function DashboardPage() {
                   You need to connect a cryptocurrency wallet to create
                   campaigns and contribute to others.
                 </p>
-                <Button>Connect Wallet</Button>
+                  <div className="wallet-login">
+                    {session?.user ? (
+                      <div className="flex flex-col gap-2">
+                        <p>Connected: </p>
+                        <p> {session?.user?.address ?? "--"}</p>
+                      <Button
+                        variant="outline"
+                        onClick={disconnectWallet}
+                        disabled={loading}
+                        size="sm"
+                      >
+                        {loading ? "Disconnecting..." : "Disconnect Wallet"}
+                      </Button>
+                    </div>
+                  ) : (
+                    // <button onClick={connectWallet} disabled={loading}>
+                    //   {loading ? "Connecting..." : "Connect MetaMask"}
+                    // </button>
+                    <Button onClick={connectWallet} disabled={loading} size="sm">
+                      {loading ? "Connecting..." : "Connect MetaMask"}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">
