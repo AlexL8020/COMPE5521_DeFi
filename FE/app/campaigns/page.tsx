@@ -18,7 +18,7 @@ export default function CampaignsPage() {
         <div>
           <h1 className="text-3xl font-bold mb-2">Browse Campaigns</h1>
           <p className="text-muted-foreground">
-            Discover student campaigns from around the world
+            Discover student campaigns from around the world !
           </p>
         </div>
       </div>
