@@ -15,7 +15,7 @@ importers:
         specifier: ^16.4.7
         version: 16.4.7
       ethers:
-        specifier: ^6.7.0
+        specifier: ^6.13.5
         version: 6.13.5
       express:
         specifier: ^4.21.2

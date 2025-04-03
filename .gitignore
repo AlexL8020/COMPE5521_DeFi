@@ -91,3 +91,4 @@ Desktop.ini
 **/.DS_Store
 **/artifacts
 **/cache
+**/typechain-types
