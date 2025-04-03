@@ -88,36 +88,6 @@ Desktop.ini
 *.swp
 *.swo
 
-# --- Node.js Backend Specific Ignores ---
-# Additional patterns specific to the backend at ./Proj/BE
-
-# Backend package locks (if you prefer not to commit these)
-BE/package-lock.json
-BE/yarn.lock
-BE/pnpm-lock.yaml
-
-# Backend runtime data
-BE/pids/
-BE/*.pid
-BE/*.seed
-BE/*.pid.lock
-
-# Backend debug files
-BE/.debug
-
-# Backend temporary files
-BE/tmp/
-BE/temp/
-
-# Backend database files (if applicable)
-BE/*.sqlite
-BE/*.db
-
-# Backend uploads directory (if applicable)
-BE/uploads/
-
-# Backend config backups
-BE/config/*.backup
-
-# Backend generated documentation
-BE/docs/generated/
+**/.DS_Store
+**/artifacts
+**/cache
