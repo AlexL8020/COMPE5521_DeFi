@@ -6,7 +6,7 @@ dotenv.config(); // Load .env file variables (primarily for non-Docker runs)
 
 // Read variables passed by Docker Compose environment
 //const mongoUri_base = process.env.MONGODB_URI; // Reads base URI e.g., mongodb://user:pass@mongo:27017
-const mongoUri_base = "mongodb://localhost:27017/DeFi" ; 
+const mongoUri_base = "mongodb://localhost:27017/DeFi";
 //const dbName = process.env.MONGODB_DB_NAME;
 const dbName = "DeFi";
 
@@ -26,8 +26,7 @@ const dbPart = dbName ? `/${dbName}` : "";
 const optionsPart = "?authSource=admin&retryWrites=true&w=majority";
 
 //const fullUri = `${baseUri}${dbPart}${optionsPart}`;
-const fullUri = "mongodb://localhost:27017/DeFi";
-
+const fullUri = mongoUri_base;
 
 export const connectDB = async (): Promise<void> => {
   try {

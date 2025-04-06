@@ -1,76 +1,110 @@
-import { ethers } from "ethers";
-import dotenv from "dotenv";
+// src/services/blockchainService.ts
+import { ethers, InterfaceAbi, ContractTransactionResponse, Log } from "ethers"; // Import necessary types
 import fs from "fs";
 import path from "path";
+import dotenv from "dotenv"; // Import dotenv
+import { CampaignDetails, RawCampaignDetails } from "../types/blockchainTypesx";
+import { CampaignCreationResult } from "../types/campaignTypes";
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../.env") }); // Load .env from root
 
-// Load contract ABIs
-const mockStableCoinAbi = JSON.parse(
+// --- ABI Loading ---
+const mockStableCoinArtifact = JSON.parse(
   fs.readFileSync(
+    // Adjust path relative to the compiled JS file in dist/
     path.join(
       __dirname,
       "../../../Blockchain/artifacts/contracts/MockStableCoin.sol/MockStableCoin.json"
     ),
     "utf8"
   )
-).abi;
+);
+const mockStableCoinAbi: InterfaceAbi = mockStableCoinArtifact.abi;
 
-const crowdfundingPlatformAbi = JSON.parse(
+const crowdfundingPlatformArtifact = JSON.parse(
   fs.readFileSync(
+    // Adjust path relative to the compiled JS file in dist/
     path.join(
       __dirname,
       "../../../Blockchain/artifacts/contracts/CrowdfundingPlatform.sol/CrowdfundingPlatform.json"
     ),
     "utf8"
   )
-).abi;
+);
+const crowdfundingPlatformAbi: InterfaceAbi = crowdfundingPlatformArtifact.abi;
 
-// Contract addresses (from deployment)
-const CONTRACT_ADDRESSES = {
-  mockStableCoin: process.env.MOCK_STABLE_COIN_ADDRESS || "",
-  crowdfundingPlatform: process.env.CROWDFUNDING_PLATFORM_ADDRESS || "",
-};
+// --- Configuration ---
+const MOCK_STABLE_COIN_ADDRESS = process.env.MOCK_STABLE_COIN_ADDRESS || "";
+const CROWDFUNDING_PLATFORM_ADDRESS =
+  process.env.CROWDFUNDING_PLATFORM_ADDRESS || "";
+const RPC_URL = process.env.RPC_URL || "http://127.0.0.1:8545";
+const ADMIN_PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 
-// RPC URL for the network
-const RPC_URL = process.env.RPC_URL || "http://localhost:8545";
+if (!MOCK_STABLE_COIN_ADDRESS || !CROWDFUNDING_PLATFORM_ADDRESS) {
+  console.error(
+    "FATAL ERROR: MOCK_STABLE_COIN_ADDRESS or CROWDFUNDING_PLATFORM_ADDRESS not found in environment variables."
+  );
+  // process.exit(1);
+}
+if (!ADMIN_PRIVATE_KEY) {
+  console.error(
+    "FATAL ERROR: PRIVATE_KEY not found in environment variables. Cannot sign transactions."
+  );
+  // process.exit(1);
+}
 
-// Private key for the backend wallet (for minting tokens to new users)
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
-
-// Initialize provider and wallet
+// Initialize provider and admin wallet
 const provider = new ethers.JsonRpcProvider(RPC_URL);
-const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const adminWallet = new ethers.Wallet(ADMIN_PRIVATE_KEY, provider);
 
-// Initialize contract instances
+console.log(`Blockchain Service using admin account: ${adminWallet.address}`);
+console.log(`RPC URL: ${RPC_URL}`);
+console.log(`MockStableCoin Address: ${MOCK_STABLE_COIN_ADDRESS}`);
+console.log(`CrowdfundingPlatform Address: ${CROWDFUNDING_PLATFORM_ADDRESS}`);
+
+// Initialize contract instances (connected to the admin wallet)
 const mockStableCoin = new ethers.Contract(
-  CONTRACT_ADDRESSES.mockStableCoin,
+  MOCK_STABLE_COIN_ADDRESS,
   mockStableCoinAbi,
-  wallet
+  adminWallet
 );
 
 const crowdfundingPlatform = new ethers.Contract(
-  CONTRACT_ADDRESSES.crowdfundingPlatform,
+  CROWDFUNDING_PLATFORM_ADDRESS,
   crowdfundingPlatformAbi,
-  wallet
+  adminWallet
 );
 
-// Amount of mock tokens to give to new users (e.g., 1000 tokens with 18 decimals)
+// Amount of mock tokens to give to new users
 const NEW_USER_TOKEN_AMOUNT = ethers.parseUnits("1000", 18);
 
+// --- Blockchain Service Object ---
 export const blockchainService = {
-  // Function to mint tokens for new users
+  // Function to mint tokens for new users (using admin wallet)
   mintTokensForNewUser: async (userAddress: string): Promise<boolean> => {
+    if (!mockStableCoin.runner) {
+      console.error("Admin wallet not connected to MockStableCoin contract.");
+      return false;
+    }
     try {
-      const tx = await mockStableCoin.mintForNewUser(
-        userAddress,
-        NEW_USER_TOKEN_AMOUNT
+      console.log(
+        `Attempting to mint ${ethers.formatUnits(
+          NEW_USER_TOKEN_AMOUNT,
+          18
+        )} MSC to ${userAddress} using admin ${adminWallet.address}`
       );
+      const tx: ContractTransactionResponse =
+        await mockStableCoin.mintForNewUser(userAddress, NEW_USER_TOKEN_AMOUNT);
       await tx.wait();
-      console.log(`Minted ${NEW_USER_TOKEN_AMOUNT} tokens to ${userAddress}`);
+      console.log(
+        `Successfully minted ${ethers.formatUnits(
+          NEW_USER_TOKEN_AMOUNT,
+          18
+        )} MSC to ${userAddress} (Tx: ${tx.hash})`
+      );
       return true;
     } catch (error) {
-      console.error("Error minting tokens:", error);
+      console.error(`Error minting tokens to ${userAddress}:`, error);
       return false;
     }
   },
@@ -81,37 +115,62 @@ export const blockchainService = {
       const balance = await mockStableCoin.balanceOf(userAddress);
       return ethers.formatUnits(balance, 18);
     } catch (error) {
-      console.error("Error getting user balance:", error);
+      console.error(`Error getting balance for ${userAddress}:`, error);
       return "0";
     }
   },
 
-  // Function to create a new campaign
+  // Function to create a new campaign (using admin wallet)
   createCampaign: async (
-    creatorAddress: string,
+    creatorWalletAddress: string, // Currently unused for signing
     goal: string,
     durationInDays: number
-  ): Promise<number | null> => {
-    try {
-      // Convert goal to wei (assuming 18 decimals)
-      const goalInWei = ethers.parseUnits(goal, 18);
-
-      // Create campaign
-      const tx = await crowdfundingPlatform.createCampaign(
-        goalInWei,
-        durationInDays
+  ): Promise<CampaignCreationResult | null> => {
+    if (!crowdfundingPlatform.runner) {
+      console.error(
+        "Admin wallet not connected to CrowdfundingPlatform contract."
       );
+      return null;
+    }
+    try {
+      const goalInWei = ethers.parseUnits(goal, 18);
+      console.log(
+        `Admin ${adminWallet.address} creating campaign (Goal: ${goal}, Duration: ${durationInDays} days)`
+      );
+
+      const tx: ContractTransactionResponse =
+        await crowdfundingPlatform.createCampaign(goalInWei, durationInDays);
       const receipt = await tx.wait();
 
-      // Extract campaign ID from event logs
-      const event = receipt.logs.find(
-        (log: any) => log.fragment && log.fragment.name === "CampaignCreated"
-      );
-
-      if (event && event.args) {
-        return Number(event.args[0]);
+      let campaignId: number | null = null;
+      if (receipt?.logs) {
+        const iFace = new ethers.Interface(crowdfundingPlatformAbi);
+        for (const log of receipt.logs as Log[]) {
+          if (log.topics && log.data) {
+            try {
+              const parsedLog = iFace.parseLog(log);
+              if (parsedLog && parsedLog.name === "CampaignCreated") {
+                campaignId = Number(parsedLog.args[0]);
+                console.log(
+                  `Campaign created successfully. Campaign ID: ${campaignId} (Tx: ${tx.hash})`
+                );
+                break;
+              }
+            } catch (parseError) {
+              // Ignore logs that don't match the ABI
+            }
+          }
+        }
       }
-      return null;
+
+      if (campaignId !== null) {
+        return { campaignId };
+      } else {
+        console.error(
+          "CampaignCreated event not found in transaction receipt."
+        );
+        return null;
+      }
     } catch (error) {
       console.error("Error creating campaign:", error);
       return null;
@@ -119,50 +178,88 @@ export const blockchainService = {
   },
 
   // Function to get campaign details
-  getCampaignDetails: async (campaignId: number) => {
+  getCampaignDetails: async (
+    campaignId: number
+  ): Promise<CampaignDetails | null> => {
     try {
-      const details = await crowdfundingPlatform.getCampaignDetails(campaignId);
+      const details: RawCampaignDetails =
+        await crowdfundingPlatform.getCampaignDetails(campaignId);
       return {
         creator: details[0],
         goal: ethers.formatUnits(details[1], 18),
-        deadline: new Date(Number(details[2]) * 1000),
+        deadline: Number(details[2]), // Return timestamp as number
         amountRaised: ethers.formatUnits(details[3], 18),
         claimed: details[4],
         active: details[5],
       };
     } catch (error) {
-      console.error("Error getting campaign details:", error);
+      if ((error as any)?.message?.includes("invalid campaign id")) {
+        console.warn(`Campaign details not found for ID: ${campaignId}`);
+      } else {
+        console.error(
+          `Error getting campaign details for ID ${campaignId}:`,
+          error
+        );
+      }
       return null;
     }
   },
 
-  // Function to listen for blockchain events
-  setupEventListeners: (callback: (event: any) => void) => {
-    crowdfundingPlatform.on(
-      "CampaignCreated",
-      (campaignId, creator, goal, deadline, event) => {
-        callback({
-          type: "CampaignCreated",
-          campaignId: Number(campaignId),
-          creator,
-          goal: ethers.formatUnits(goal, 18),
-          deadline: new Date(Number(deadline) * 1000),
-        });
-      }
-    );
+  // Function to contribute to a campaign (using admin wallet)
+  contributeToCampaign: async (
+    contributorWalletAddress: string, // Currently unused for signing
+    campaignId: number,
+    amount: string
+  ): Promise<boolean> => {
+    if (!mockStableCoin.runner || !crowdfundingPlatform.runner) {
+      console.error("Admin wallet not connected to contracts.");
+      return false;
+    }
+    try {
+      const amountInWei = ethers.parseUnits(amount, 18);
+      console.log(
+        `Admin ${adminWallet.address} initiating contribution to campaign ${campaignId} (Amount: ${amount} MSC)`
+      );
 
-    crowdfundingPlatform.on(
-      "ContributionMade",
-      (campaignId, contributor, amount, event) => {
-        callback({
-          type: "ContributionMade",
-          campaignId: Number(campaignId),
-          contributor,
-          amount: ethers.formatUnits(amount, 18),
-        });
-      }
-    );
+      // Step 1: Approve the CrowdfundingPlatform contract to spend tokens
+      console.log(
+        `Admin approving platform ${CROWDFUNDING_PLATFORM_ADDRESS} to spend ${amount} MSC...`
+      );
+      const approveTx: ContractTransactionResponse =
+        await mockStableCoin.approve(
+          CROWDFUNDING_PLATFORM_ADDRESS,
+          amountInWei
+        );
+      await approveTx.wait();
+      console.log(
+        `Approval successful for campaign ${campaignId}. (Tx: ${approveTx.hash})`
+      );
 
-    // Add more event listeners as needed
+      // Step 2: Call the contribute function on the CrowdfundingPlatform
+      console.log(
+        `Admin contributing ${amount} MSC to campaign ${campaignId}...`
+      );
+      const contributeTx: ContractTransactionResponse =
+        await crowdfundingPlatform.contribute(campaignId, amountInWei);
+      await contributeTx.wait();
+      console.log(
+        `Contribution successful to campaign ${campaignId}. (Tx: ${contributeTx.hash})`
+      );
+
+      return true;
+    } catch (error) {
+      console.error(
+        `Error contributing to campaign ${campaignId} with amount ${amount}:`,
+        error
+      );
+      return false;
+    }
   },
+
+  // setupEventListeners function has been removed
 };
+
+// Optional: Log initialization status
+console.log(
+  `Blockchain service configured. Admin: ${adminWallet.address}, RPC: ${RPC_URL}`
+);

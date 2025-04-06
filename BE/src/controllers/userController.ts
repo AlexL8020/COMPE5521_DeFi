@@ -1,88 +1,70 @@
-// src/controllers/userController.ts
-import { Request, Response, NextFunction } from "express";
-import User, { IUser } from "../models/User"; // Import model and interface
-import mongoose, { Schema, Document, Model } from "mongoose";
+// ./Proj/BE/src/controllers/userController.ts
+import { Request, Response } from "express";
+import User, { IUser } from "../models/User";
+import { blockchainService } from "../services/blockchainService";
 
-// Define a type for the request body when creating a user (optional but good practice)
-interface CreateUserRequestBody {
-  name: string;
-  email: string;
-  age?: number;
-}
+export const userController = {
+  // Register a new user
+  registerUser: async (req: Request, res: Response) => {
+    try {
+      const { name, email, profilePictureUrl, bio, walletAddress } = req.body;
 
-export const createUser = async (
-  // Use the specific request body type
-  req: Request<{}, {}, CreateUserRequestBody>,
-  res: Response,
-  next: NextFunction, // Include next for error handling middleware
-): Promise<void> => {
-  try {
-    const { name, email, age } = req.body;
+      // Check if user already exists
+      const existingUser = await User.findOne({ walletAddress });
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
 
-    // Basic validation (Mongoose schema validation also applies)
-    if (!name || !email) {
-      res.status(400).json({ message: "Name and email are required" });
-      return; // Important to return after sending response
+      // Create new user in MongoDB (off-chain storage)
+      const newUser = new User({
+        name,
+        email,
+        profilePictureUrl,
+        bio,
+        walletAddress, // This is the only link to the blockchain identity
+      });
+
+      await newUser.save();
+
+      // Mint tokens for the new user (on-chain operation)
+      // This only interacts with the blockchain to mint tokens to the wallet address
+      const mintSuccess = await blockchainService.mintTokensForNewUser(
+        walletAddress
+      );
+
+      return res.status(201).json({
+        message: "User registered successfully",
+        user: newUser,
+        tokensReceived: mintSuccess,
+      });
+    } catch (error) {
+      console.error("Error registering user:", error);
+      return res.status(500).json({ message: "Server error" });
     }
+  },
 
-    const newUser = new User({ name, email, age });
-    const savedUser = await newUser.save();
+  // Get user profile (combines off-chain and on-chain data)
+  getUserProfile: async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.params;
 
-    res.status(201).json(savedUser);
-  } catch (error) {
-    // Handle potential duplicate key error (email unique)
-    if (error instanceof Error && (error as any).code === 11000) {
-      res.status(409).json({ message: "Email already exists" }); // 409 Conflict
-      return;
+      // Get user profile from MongoDB (off-chain)
+      const user = await User.findOne({ walletAddress });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Get user's token balance from blockchain (on-chain)
+      const balance = await blockchainService.getUserBalance(walletAddress);
+
+      // Return combined data
+      return res.status(200).json({
+        user, // Off-chain user profile data
+        balance, // On-chain token balance
+      });
+    } catch (error) {
+      console.error("Error getting user profile:", error);
+      return res.status(500).json({ message: "Server error" });
     }
-    // Pass other errors to a generic error handler (if you have one)
-    // For now, just log and send a 500
-    console.error("Error creating user:", error);
-    res.status(500).json({ message: "Failed to create user" });
-    // Or: next(error); // If using error handling middleware
-  }
+  },
 };
-
-export const getUsers = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  try {
-    const users: IUser[] = await User.find({}); // Fetch all users
-    res.status(200).json(users);
-  } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).json({ message: "Failed to fetch users" });
-    // Or: next(error);
-  }
-};
-
-export const getUserById = async (
-  req: Request<{ id: string }>, // Type the route parameter 'id'
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  try {
-    const userId = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      res.status(400).json({ message: "Invalid user ID format" });
-      return;
-    }
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
-    res.status(200).json(user);
-  } catch (error) {
-    console.error("Error fetching user by ID:", error);
-    res.status(500).json({ message: "Failed to fetch user" });
-    // Or: next(error);
-  }
-};
-
-// Add other controller functions (updateUser, deleteUser) similarly...
