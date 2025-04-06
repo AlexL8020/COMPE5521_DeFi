@@ -37,8 +37,11 @@ app.use(cors(corsOptions));
 //     next(); // Skip JSON parsing for other content types
 //   }
 // });
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.use(express.json({ limit: "10mb" }));
+
+// If you might also use URL-encoded forms with large data (less likely for base64)
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Routes
 app.get("/", (req: Request, res: Response) => {
