@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, GraduationCap, Globe, Lightbulb } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import WalletLogin from "@/components/WalletLogin";
-import { useState, useEffect } from 'react';
-import { API_CONFIG } from './API'; // Your API config file
+import { useState, useEffect } from "react";
+import { API_CONFIG } from "./API"; // Your API config file
 
 export default function Home() {
-
   const [campaigns, setCampaigns] = useState([]); // State to hold fetched campaigns
   const [loading, setLoading] = useState(true); // Optional: Loading state
 
@@ -17,9 +16,9 @@ export default function Home() {
     const fetchCampaigns = async () => {
       try {
         const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
         if (response.ok) {
@@ -27,17 +26,16 @@ export default function Home() {
           setCampaigns(data.slice(0, 3)); // Limit to 3 campaigns for display
           setLoading(false);
         } else {
-          console.error('Failed to fetch campaigns:', response.status);
+          console.error("Failed to fetch campaigns:", response.status);
         }
       } catch (error) {
-        console.error('Error fetching campaigns:', error);
+        console.error("Error fetching campaigns:", error);
         setLoading(false);
       }
     };
 
     fetchCampaigns();
   }, []); // Empty dependency array to run once on mount
-
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -178,69 +176,80 @@ export default function Home() {
           </div>
         </section> */}
 
-<section className="py-16 bg-muted">
-      <div className="container">
-        <h2 className="text-3xl font-bold text-center mb-12">
-          Featured Campaigns
-        </h2>
-        {loading ? (
-          <p className="text-center">Loading campaigns...</p>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {campaigns.map((campaign) => {
-              // Convert progress and fundingGoal to numbers
-              const progress = Number(campaign.progress);
-              const fundingGoal = Number(campaign.fundingGoal);
+        <section className="py-16 bg-muted">
+          <div className="container">
+            <h2 className="text-3xl font-bold text-center mb-12">
+              Featured Campaigns
+            </h2>
+            {loading ? (
+              <p className="text-center">Loading campaigns...</p>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {campaigns.length === 0 ? (
+                  //  messages to users if no campaigns are found
+                  <p className="text-center col-span-full">
+                    No campaigns found. Please check back later.
+                  </p>
+                ) : (
+                  campaigns.map((campaign) => {
+                    // Convert progress and fundingGoal to numbers
+                    const progress = Number(campaign.progress);
+                    const fundingGoal = Number(campaign.fundingGoal);
 
-              // Calculate progress percentage
-              const progressPercentage = fundingGoal > 0 
-                ? Math.round((progress / fundingGoal) * 100) 
-                : 0; // Cap at 100% and handle division by zero
+                    // Calculate progress percentage
+                    const progressPercentage =
+                      fundingGoal > 0
+                        ? Math.round((progress / fundingGoal) * 100)
+                        : 0; // Cap at 100% and handle division by zero
 
-              return (
-                <Link href={`/campaigns/${campaign._id}`} key={campaign._id} className="group">
-                  <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
-                    <div className="aspect-video relative bg-muted">
-                      <img
-                        src={campaign.image} // Base64 string from MongoDB
-                        alt={campaign.title}
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
-                        {campaign.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm mb-4">
-                        {campaign.shortDescription}
-                      </p>
-                      <div className="space-y-2">
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full"
-                            style={{ width: `${progressPercentage}%` }} // Real progress
-                          ></div>
+                    return (
+                      <Link
+                        href={`/campaigns/${campaign._id}`}
+                        key={campaign._id}
+                        className="group"
+                      >
+                        <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
+                          <div className="aspect-video relative bg-muted">
+                            <img
+                              src={campaign.image} // Base64 string from MongoDB
+                              alt={campaign.title}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                          <div className="p-5">
+                            <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
+                              {campaign.title}
+                            </h3>
+                            <p className="text-muted-foreground text-sm mb-4">
+                              {campaign.shortDescription}
+                            </p>
+                            <div className="space-y-2">
+                              <div className="w-full bg-muted rounded-full h-2">
+                                <div
+                                  className="bg-primary h-2 rounded-full"
+                                  style={{ width: `${progressPercentage}%` }} // Real progress
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="font-medium">
+                                  {progress.toFixed(2)} ETH raised
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {progressPercentage.toFixed(0)}% of{" "}
+                                  {fundingGoal} ETH
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">
-                            {progress.toFixed(2)} ETH raised
-                          </span>
-                          <span className="text-muted-foreground">
-                            {progressPercentage.toFixed(0)}% of {fundingGoal} ETH
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </section>
-
-
+        </section>
       </main>
       <footer className="border-t mt-auto">
         <div className="container py-8">
@@ -276,7 +285,6 @@ export default function Home() {
                     Browse Campaigns Test
                   </Link>
                 </li>
-
 
                 <li>
                   <Link
