@@ -35,6 +35,10 @@ import { useWalletAuth } from "../../../hooks/useWalletAuth";
 import { useSession } from "next-auth/react";
 import clsx from "clsx";
 import { form } from "viem/chains";
+import {
+  CreateCampaignPayload,
+  useCreateCampaign,
+} from "@/query/useForCampaigns";
 type CampaignFormData = {
   title: string;
   category: string;
@@ -63,6 +67,14 @@ export default function CreateCampaignPage() {
     duration: "",
     //creatorWallet: session?.user?.address,
   });
+
+  const {
+    mutateAsync: createCampaignAsync,
+    isError,
+    isSuccess,
+    error,
+  } = useCreateCampaign();
+
   const nextStep = () => {
     setCurrentStep((prev) => Math.min(prev + 1, 3));
   };
@@ -110,39 +122,41 @@ export default function CreateCampaignPage() {
 
   // Form submission handler
   const handleSubmit = async () => {
-    const jsonData = {
+    if (!creatorWallet) {
+      console.error("Creator wallet address is missing.");
+      return;
+    }
+
+    // Construct the payload - directly use string values from formData
+    const campaignPayload: CreateCampaignPayload = {
       title: formData.title,
       category: formData.category,
       shortDescription: formData.shortDescription,
-      image: formData.image || "default-image-url", // Use base64 or placeholder
+      // Handle potential null image - send null or a default/empty string if API requires string
+      image: formData.image || null, // Or: formData.image || "default-image-url" if API needs a string
       fullDescription: formData.fullDescription,
       timeline: formData.timeline,
       aboutYou: formData.aboutYou,
-      fundingGoal: formData.fundingGoal,
-      duration: formData.duration,
+      fundingGoal: formData.fundingGoal, // Keep as string
+      duration: formData.duration, // Keep as string
       creatorWallet,
     };
 
-    console.log("Submitting JSON:", jsonData);
+    console.log("Submitting JSON:", campaignPayload);
     console.log(creatorWallet);
-    try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          //'Content-Type':'application/x-www-form-urlencoded'
-        },
-        body: JSON.stringify(jsonData),
+    console.log(
+      "Submitting campaign payload via useMutation:",
+      campaignPayload
+    );
+    createCampaignAsync(campaignPayload)
+      .then((response) => {
+        console.log("Campaign created successfully:", response);
+        // Handle success (e.g., redirect, show success message)
+      })
+      .catch((error) => {
+        console.error("Error creating campaign:", error);
+        // Handle error (e.g., show error message)
       });
-      if (response.ok && creatorWallet) {
-        console.log("Campaign launched successfully");
-        // Optional: Reset form or redirect user
-      } else {
-        console.error("Failed to launch campaign (frontend)");
-      }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-    }
   };
 
   return (
@@ -198,6 +212,7 @@ const StepBar = ({ currentStep }: { currentStep: number }) => {
         <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-muted"></div>
         {[1, 2, 3].map((step) => (
           <div
+            key={step}
             className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 ${
               currentStep >= step
                 ? "bg-primary text-primary-foreground border-primary"
