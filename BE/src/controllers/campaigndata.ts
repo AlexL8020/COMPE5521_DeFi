@@ -53,7 +53,7 @@ export const campaigndata = async (
       title,
       category,
       shortDescription,
-      // image,
+      image,
       fullDescription,
       timeline,
       aboutYou,

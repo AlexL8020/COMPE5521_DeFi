@@ -1,6 +1,7 @@
+// FE/app/campaigns/create/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,8 +21,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Upload, Info, Check, ChevronDown } from "lucide-react";
+// Removed Tabs imports as they were commented out
+import {
+  AlertCircle,
+  Upload,
+  Info,
+  Check,
+  ChevronDown,
+  Loader2,
+} from "lucide-react"; // Added Loader2
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -29,16 +37,27 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { API_CONFIG } from "../../API"; // Adjust path as needed
-
-import { useWalletAuth } from "../../../hooks/useWalletAuth";
-import { useSession } from "next-auth/react";
-import clsx from "clsx";
-import { form } from "viem/chains";
+import { useWalletAuth } from "../../../hooks/useWalletAuth"; // Assuming this uses wagmi
 import {
-  CreateCampaignPayload,
-  useCreateCampaign,
-} from "@/query/useForCampaigns";
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi"; // Import wagmi hooks
+import { ethers, Interface, Log } from "ethers"; // Import ethers
+import {
+  useSaveCampaignMetadata,
+  SaveCampaignMetadataPayload,
+} from "@/query/useSaveCampaignMetaData"; // Import the NEW metadata hook
+import clsx from "clsx";
+
+// --- Contract Configuration ---
+// Import ABI (replace with your actual import method)
+import CrowdfundingPlatformAbi from "../../../../Blockchain/artifacts/contracts/CrowdfundingPlatform.sol/CrowdfundingPlatform.json"; // Adjust path
+const contractABI = CrowdfundingPlatformAbi.abi;
+const contractAddress = process.env
+  .NEXT_PUBLIC_CROWDFUNDING_PLATFORM_ADDRESS as `0x${string}` | undefined;
+
+// --- Component Types ---
 type CampaignFormData = {
   title: string;
   category: string;
@@ -47,42 +66,63 @@ type CampaignFormData = {
   fullDescription: string;
   timeline: string;
   aboutYou: string;
-  fundingGoal: string;
-  duration: string;
+  fundingGoal: string; // Keep as string for input
+  duration: string; // Keep as string for input
 };
+
+// --- Component ---
 export default function CreateCampaignPage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const { connectWallet, disconnectWallet, loading } = useWalletAuth();
-  const { data: session } = useSession();
-  const creatorWallet = session?.user?.address;
   const [formData, setFormData] = useState<CampaignFormData>({
     title: "",
     category: "",
     shortDescription: "",
-    image: null as string | null,
+    image: null,
     fullDescription: "",
     timeline: "",
     aboutYou: "",
     fundingGoal: "",
     duration: "",
-    //creatorWallet: session?.user?.address,
   });
+  const [txError, setTxError] = useState<string | null>(null);
+  const [createdCampaignId, setCreatedCampaignId] = useState<number | null>(
+    null
+  );
+
+  // --- Wallet & Account ---
+  const { address: creatorWallet, isConnected } = useAccount(); // Get address directly from wagmi
+
+  // --- Wagmi Hooks for Blockchain Interaction ---
+  const {
+    data: writeContractHash, // Transaction hash from writeContract
+    writeContract, // Function to initiate the transaction
+    isPending: isWriteContractLoading, // Loading state for initiating tx
+    error: writeContractError,
+  } = useWriteContract();
 
   const {
-    mutateAsync: createCampaignAsync,
-    isError,
-    isSuccess,
-    error,
-  } = useCreateCampaign();
+    data: txReceipt, // Transaction receipt after confirmation
+    isLoading: isConfirming, // Loading state while waiting for confirmation
+    isSuccess: isConfirmed, // True if transaction is confirmed
+    error: txReceiptError,
+  } = useWaitForTransactionReceipt({
+    hash: writeContractHash, // Wait for the specific transaction hash
+    confirmations: 1, // Number of confirmations to wait for (adjust as needed)
+  });
 
-  const nextStep = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, 3));
-  };
+  // --- React Query Hook for Saving Metadata to Backend ---
+  const {
+    mutate: saveMetadataMutate,
+    isPending: isSavingMetadata,
+    isSuccess: isMetadataSaved,
+    error: saveMetadataError,
+  } = useSaveCampaignMetadata();
 
-  const prevStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
-  };
+  // --- Step Navigation ---
+  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
+  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
+  // --- Form Input Handlers ---
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -95,69 +135,197 @@ export default function CreateCampaignPage() {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; // Get the first selected file
+    const file = e.target.files?.[0];
     if (file) {
       if (file.type.startsWith("image/")) {
-        // File is an image, process it
         if (file.size > 1 * 1024 * 1024) {
+          // 1MB limit
           alert("File too large. Max size: 1MB.");
           return;
         }
         const reader = new FileReader();
         reader.onloadend = () => {
-          const base64image = reader.result as string;
-          setFormData((prev) => ({ ...prev, image: base64image }));
-          reader.result
-            ? console.log("--- get the image ---")
-            : console.log("no image found");
+          setFormData((prev) => ({ ...prev, image: reader.result as string }));
         };
         reader.readAsDataURL(file);
       } else {
-        // File is not an image, notify user and reset input
         alert("Please select an image file.");
-        e.target.value = ""; // Clear the input so they can try again
+        e.target.value = "";
       }
     }
   };
 
-  // Form submission handler
-  const handleSubmit = async () => {
-    if (!creatorWallet) {
-      console.error("Creator wallet address is missing.");
+  // --- Handle Blockchain Transaction Submission ---
+  const handleLaunchCampaign = async () => {
+    setTxError(null); // Reset previous errors
+    setCreatedCampaignId(null);
+
+    if (!isConnected || !creatorWallet) {
+      alert("Please connect your wallet first.");
+      // Optionally trigger wallet connection here if you have a function for it
+      return;
+    }
+    if (!contractAddress) {
+      alert("Contract address is not configured. Please contact support.");
+      console.error("NEXT_PUBLIC_CROWDFUNDING_PLATFORM_ADDRESS is not set");
       return;
     }
 
-    // Construct the payload - directly use string values from formData
-    const campaignPayload: CreateCampaignPayload = {
-      title: formData.title,
-      category: formData.category,
-      shortDescription: formData.shortDescription,
-      // Handle potential null image - send null or a default/empty string if API requires string
-      image: formData.image || null, // Or: formData.image || "default-image-url" if API needs a string
-      fullDescription: formData.fullDescription,
-      timeline: formData.timeline,
-      aboutYou: formData.aboutYou,
-      fundingGoal: formData.fundingGoal, // Keep as string
-      duration: formData.duration, // Keep as string
-      creatorWallet,
-    };
+    try {
+      // 1. Validate and Prepare Contract Arguments
+      const goalValue = parseFloat(formData.fundingGoal);
+      const durationValue = parseInt(formData.duration, 10);
 
-    console.log("Submitting JSON:", campaignPayload);
-    console.log(creatorWallet);
-    console.log(
-      "Submitting campaign payload via useMutation:",
-      campaignPayload
-    );
-    createCampaignAsync(campaignPayload)
-      .then((response) => {
-        console.log("Campaign created successfully:", response);
-        // Handle success (e.g., redirect, show success message)
-      })
-      .catch((error) => {
-        console.error("Error creating campaign:", error);
-        // Handle error (e.g., show error message)
+      if (isNaN(goalValue) || goalValue <= 0) {
+        setTxError("Invalid funding goal. Please enter a positive number.");
+        return;
+      }
+      if (isNaN(durationValue) || durationValue <= 0) {
+        setTxError("Invalid duration. Please select a valid number of days.");
+        return;
+      }
+
+      const goalInWei = ethers.parseUnits(formData.fundingGoal, 18); // Convert ETH to Wei
+
+      console.log("Initiating createCampaign transaction...");
+      console.log("Goal (Wei):", goalInWei.toString());
+      console.log("Duration (Days):", durationValue);
+
+      // 2. Call writeContract (triggers MetaMask popup)
+      writeContract({
+        address: contractAddress,
+        abi: contractABI,
+        functionName: "createCampaign",
+        args: [goalInWei, BigInt(durationValue)], // Use BigInt for uint256 duration
       });
+      // Execution continues in the useEffect below once hash is available and tx confirmed
+    } catch (err: any) {
+      console.error("Error initiating transaction:", err);
+      setTxError(
+        `Failed to initiate transaction: ${err.shortMessage || err.message}`
+      );
+    }
   };
+
+  // --- Effect to Handle Post-Transaction Logic (Confirmation & Metadata Save) ---
+  useEffect(() => {
+    if (isConfirmed && txReceipt) {
+      console.log("Transaction Confirmed:", txReceipt);
+      setTxError(null); // Clear any previous errors
+
+      // 3. Parse Logs to find CampaignCreated event and get campaignId
+      let foundCampaignId: number | null = null;
+      const iFace = new Interface(contractABI);
+      for (const log of txReceipt.logs as unknown as Log[]) {
+        // Cast needed sometimes
+        try {
+          // Ensure log has topics and data before parsing
+          if (
+            log.topics &&
+            log.data &&
+            log.address.toLowerCase() === contractAddress?.toLowerCase()
+          ) {
+            const parsedLog = iFace.parseLog(log);
+            if (parsedLog && parsedLog.name === "CampaignCreated") {
+              foundCampaignId = Number(parsedLog.args[0]); // First argument is campaignId
+              console.log(
+                "Parsed CampaignCreated event, Campaign ID:",
+                foundCampaignId
+              );
+              break;
+            }
+          }
+        } catch (parseError) {
+          // Ignore logs that don't match the ABI or are from other contracts
+          // console.debug("Could not parse log or wrong contract:", log, parseError);
+        }
+      }
+
+      if (foundCampaignId !== null && creatorWallet) {
+        setCreatedCampaignId(foundCampaignId); // Store the ID
+
+        // 4. Prepare Metadata Payload for Backend
+        const metadataPayload: SaveCampaignMetadataPayload = {
+          campaignId: foundCampaignId,
+          title: formData.title,
+          category: formData.category,
+          shortDescription: formData.shortDescription,
+          image: formData.image,
+          fullDescription: formData.fullDescription,
+          timeline: formData.timeline,
+          aboutYou: formData.aboutYou,
+          fundingGoal: formData.fundingGoal, // Send original string values
+          duration: formData.duration,
+          creatorWallet: creatorWallet, // Use the connected wallet address
+          // contractAddress: contractAddress, // Include if needed by backend
+        };
+
+        console.log("Saving metadata to backend:", metadataPayload);
+        // 5. Call the mutation to save metadata
+        saveMetadataMutate(metadataPayload);
+      } else if (!creatorWallet) {
+        console.error("Creator wallet address missing after confirmation.");
+        setTxError("Wallet address missing after confirmation.");
+      } else {
+        console.error(
+          "Could not find CampaignCreated event in transaction logs."
+        );
+        setTxError(
+          "Campaign created, but failed to retrieve Campaign ID from logs."
+        );
+      }
+    }
+  }, [
+    isConfirmed,
+    txReceipt,
+    contractABI,
+    creatorWallet,
+    formData,
+    saveMetadataMutate,
+  ]); // Dependencies
+
+  // --- Handle Errors from Hooks ---
+  useEffect(() => {
+    if (writeContractError) {
+      console.error("Write Contract Error:", writeContractError);
+      setTxError(
+        `Blockchain Error: ${writeContractError.message.split("(")[0]}`
+      ); // Show cleaner error
+    }
+    if (txReceiptError) {
+      console.error("Transaction Receipt Error:", txReceiptError);
+      setTxError(`Transaction Failed: ${txReceiptError.message.split("(")[0]}`);
+    }
+    if (saveMetadataError) {
+      // Error saving metadata already logged in the hook's onError
+      // Optionally set a state here to show a specific UI message for metadata save failure
+      setTxError(
+        `Metadata Save Failed: ${
+          saveMetadataError.response?.data?.message || saveMetadataError.message
+        }`
+      );
+    }
+  }, [writeContractError, txReceiptError, saveMetadataError]);
+
+  // --- Determine Button State ---
+  const getButtonState = () => {
+    if (!isConnected) return { text: "Connect Wallet", disabled: true };
+    if (isWriteContractLoading)
+      return { text: "Check Wallet...", disabled: true };
+    if (isConfirming) return { text: "Confirming Tx...", disabled: true };
+    if (isSavingMetadata) return { text: "Saving Data...", disabled: true };
+    if (isConfirmed && isMetadataSaved)
+      return { text: "Campaign Launched!", disabled: true };
+    // Check if required fields for the final step are filled
+    const areFieldsFilled =
+      formData.fundingGoal !== "" && formData.duration !== "";
+    if (!areFieldsFilled)
+      return { text: "Fill Funding Details", disabled: true };
+    // Check if review is expanded (assuming reviewExpanded state exists)
+    // if (!reviewExpanded) return { text: "Review Before Launching", disabled: true };
+    return { text: "Launch Campaign", disabled: false };
+  };
+  const buttonState = getButtonState();
 
   return (
     <div className="container py-8 max-w-3xl">
@@ -173,6 +341,7 @@ export default function CreateCampaignPage() {
 
       <StepBar currentStep={currentStep} />
 
+      {/* Render steps based on currentStep */}
       {currentStep === 1 && (
         <BasicInfoStep
           formData={formData}
@@ -197,7 +366,12 @@ export default function CreateCampaignPage() {
           formData={formData}
           handleInputChange={handleInputChange}
           handleSelectChange={handleSelectChange}
-          handleSubmit={handleSubmit}
+          // Pass the new handler and loading states
+          handleLaunchCampaign={handleLaunchCampaign}
+          buttonState={buttonState}
+          txError={txError}
+          isSuccess={isConfirmed && isMetadataSaved} // Overall success
+          createdCampaignId={createdCampaignId}
           prevStep={prevStep}
         />
       )}
@@ -205,7 +379,11 @@ export default function CreateCampaignPage() {
   );
 }
 
+// --- Step Components (Mostly Unchanged, except FundingAndReviewStep) ---
+
+// StepBar component remains the same
 const StepBar = ({ currentStep }: { currentStep: number }) => {
+  // ... (same as before) ...
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between relative">
@@ -259,6 +437,7 @@ const StepBar = ({ currentStep }: { currentStep: number }) => {
   );
 };
 
+// BasicInfoStep component remains the same
 type BasicInfoStepProps = {
   formData: {
     title: string;
@@ -280,6 +459,7 @@ function BasicInfoStep({
   handleFileChange,
   nextStep,
 }: BasicInfoStepProps) {
+  // ... (same as before) ...
   const isNextDisabled =
     formData.title === "" ||
     formData.category === "" ||
@@ -373,6 +553,7 @@ function BasicInfoStep({
   );
 }
 
+// CampaignDetailsStep component remains the same
 type CampaignDetailsStepProps = {
   formData: {
     fullDescription: string;
@@ -391,6 +572,7 @@ function CampaignDetailsStep({
   nextStep,
   prevStep,
 }: CampaignDetailsStepProps) {
+  // ... (same as before) ...
   const isNextDisabled =
     formData.fullDescription === "" ||
     formData.timeline === "" ||
@@ -407,26 +589,6 @@ function CampaignDetailsStep({
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="fullDescription">Full Description</Label>
-          {/* <Tabs defaultValue="write">
-            <TabsList className="mb-2">
-              <TabsTrigger value="write">Write</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
-            <TabsContent value="write">
-              <Textarea
-                id="fullDescription"
-                placeholder="Tell your story. Why are you raising funds? What will you use them for? How will backers benefit?"
-                className="min-h-[200px] resize-none"
-                value={formData.fullDescription}
-                onChange={handleInputChange}
-              />
-            </TabsContent>
-            <TabsContent value="preview">
-              <div className="border rounded-md p-4 min-h-[200px] prose prose-sm max-w-none">
-                <p>Preview of your formatted description will appear here.</p>
-              </div>
-            </TabsContent>
-          </Tabs> */}
           <Textarea
             id="fullDescription"
             placeholder="Tell your story. Why are you raising funds? What will you use them for? How will backers benefit?"
@@ -472,13 +634,18 @@ function CampaignDetailsStep({
   );
 }
 
+// FundingAndReviewStep component UPDATED
 type FundingAndReviewStepProps = {
   formData: CampaignFormData;
   handleInputChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
   handleSelectChange: (id: string, value: string) => void;
-  handleSubmit: () => void;
+  handleLaunchCampaign: () => void; // Changed from handleSubmit
+  buttonState: { text: string; disabled: boolean }; // Pass button state
+  txError: string | null; // Pass transaction error
+  isSuccess: boolean; // Pass overall success state
+  createdCampaignId: number | null; // Pass created ID
   prevStep: () => void;
 };
 
@@ -486,14 +653,15 @@ function FundingAndReviewStep({
   formData,
   handleInputChange,
   handleSelectChange,
-  handleSubmit,
+  handleLaunchCampaign, // Use the new handler
+  buttonState, // Use the button state object
+  txError, // Display transaction error
+  isSuccess, // Display success message
+  createdCampaignId,
   prevStep,
 }: FundingAndReviewStepProps) {
-  // State to track if review has been expanded
-  const areFieldsAtThisStepFilled =
-    formData.fundingGoal !== "" && formData.duration !== "";
-  formData.fundingGoal !== "" && formData.duration !== "";
   const [reviewExpanded, setReviewExpanded] = useState(false);
+
   return (
     <Card>
       <CardHeader>
@@ -503,37 +671,41 @@ function FundingAndReviewStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Wallet Connection Alert */}
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Important</AlertTitle>
           <AlertDescription>
-            Your wallet must be connected to create a campaign. All funds will
-            be received directly to your wallet.
+            Your wallet must be connected to launch the campaign on the
+            blockchain. Funds will be managed by the smart contract.
           </AlertDescription>
         </Alert>
 
+        {/* Funding Goal Input */}
         <div className="space-y-2">
           <Label htmlFor="fundingGoal">Funding Goal (ETH)</Label>
           <Input
             id="fundingGoal"
             type="number"
-            placeholder="5.0"
-            min="0.1"
-            step="0.1"
+            placeholder="e.g., 1.5" // Changed placeholder
+            min="0.01" // Adjust min goal if needed
+            step="0.01" // Adjust step
             value={formData.fundingGoal}
             onChange={handleInputChange}
+            disabled={buttonState.disabled && !isSuccess} // Disable if processing
           />
           <p className="text-xs text-muted-foreground">
-            Set a realistic goal based on your needs. You'll receive all funds
-            raised, even if you don't reach your goal.
+            Enter the total amount of ETH you aim to raise.
           </p>
         </div>
 
+        {/* Duration Select */}
         <div className="space-y-2">
           <Label htmlFor="duration">Campaign Duration (Days)</Label>
           <Select
             value={formData.duration}
             onValueChange={(value) => handleSelectChange("duration", value)}
+            disabled={buttonState.disabled && !isSuccess} // Disable if processing
           >
             <SelectTrigger>
               <SelectValue placeholder="Select duration" />
@@ -547,22 +719,13 @@ function FundingAndReviewStep({
           </Select>
         </div>
 
-        <div className="border rounded-md p-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            <h3 className="font-medium">Campaign Review</h3>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Before launching, please review all details of your campaign. Once
-            published, you can make minor edits, but major changes will require
-            approval.
-          </p>
-        </div>
+        {/* Review Section */}
         <Collapsible
           className="border rounded-md overflow-hidden"
           onOpenChange={(open) => setReviewExpanded(open)}
         >
           <CollapsibleTrigger className="flex w-full items-center justify-between p-4 font-medium hover:bg-muted/50 transition-colors">
+            {/* ... (Trigger content same as before) ... */}
             <div className="flex items-center gap-2">
               {reviewExpanded ? (
                 <Check className="h-4 w-4 text-primary" />
@@ -582,6 +745,7 @@ function FundingAndReviewStep({
             />
           </CollapsibleTrigger>
           <CollapsibleContent className="border-t">
+            {/* ... (Review content same as before) ... */}
             <div className="p-4 space-y-6">
               <div>
                 <h3 className="font-medium text-lg mb-4">Campaign Summary</h3>
@@ -662,7 +826,12 @@ function FundingAndReviewStep({
                     <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto text-sm">
                       {formData.fullDescription ? (
                         <div className="prose prose-sm max-w-none">
-                          <p>{formData.fullDescription}</p>
+                          {/* Basic rendering, consider markdown parser */}
+                          {formData.fullDescription
+                            .split("\n")
+                            .map((line, i) => (
+                              <p key={i}>{line}</p>
+                            ))}
                         </div>
                       ) : (
                         <p className="text-muted-foreground italic">
@@ -695,27 +864,55 @@ function FundingAndReviewStep({
             </div>
           </CollapsibleContent>
         </Collapsible>
+
+        {/* Transaction Status/Error Display */}
+        {txError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{txError}</AlertDescription>
+          </Alert>
+        )}
+        {isSuccess && (
+          <Alert>
+            {" "}
+            {/* You might need to define a 'success' variant */}
+            <Check className="h-4 w-4" />
+            <AlertTitle>Success!</AlertTitle>
+            <AlertDescription>
+              Campaign successfully launched on the blockchain (ID:{" "}
+              {createdCampaignId}) and metadata saved!
+              {/* Optionally add a link to view the campaign */}
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={prevStep}>
+        <Button
+          variant="outline"
+          onClick={prevStep}
+          disabled={buttonState.disabled && !isSuccess}
+        >
           Back
         </Button>
         <Button
-          disabled={!reviewExpanded || !areFieldsAtThisStepFilled}
-          onClick={handleSubmit}
+          disabled={buttonState.disabled || !reviewExpanded} // Also disable if review isn't expanded
+          onClick={handleLaunchCampaign} // Use the new handler
         >
-          {reviewExpanded
-            ? areFieldsAtThisStepFilled
-              ? "Launch Campaign"
-              : "Please fill all the fields"
-            : "Review Before Submitting"}
+          {/* Show loader icon when processing */}
+          {buttonState.disabled && !isSuccess && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          {buttonState.text}
         </Button>
       </CardFooter>
     </Card>
   );
 }
 
+// getCategoryDisplayName function remains the same
 const getCategoryDisplayName = (category: string) => {
+  // ... (same as before) ...
   switch (category) {
     case "tuition":
       return "Tuition";
