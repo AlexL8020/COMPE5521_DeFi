@@ -5,6 +5,7 @@ import { connectDB, closeDB } from "./config/db";
 import userRoutesV2 from "./routes/userRoutesV2";
 import register from "./routes/register";
 import campaign from "./routes/campaign";
+import campaignRoutesV2 from "./routes/campaignRoutesV2";
 import blockchainRoutes from "./routes/blockchainRoutes"; // Import blockchain routes
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -53,6 +54,7 @@ app.get("/", (req: Request, res: Response) => {
 app.use("/api/v1/users", userRoutesV2);
 app.use("/api/v1/register", register);
 app.use("/api/v1/campaign", campaign);
+app.use("/api/v1/campaigns", campaignRoutesV2);
 app.use("/api/v1/blockchain", blockchainRoutes); // Add blockchain routes
 
 // Error handling middleware
