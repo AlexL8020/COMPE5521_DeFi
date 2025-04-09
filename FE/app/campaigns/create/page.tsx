@@ -47,12 +47,11 @@ import { ethers, Interface, Log } from "ethers"; // Import ethers
 import {
   useSaveCampaignMetadata,
   SaveCampaignMetadataPayload,
-} from "@/query/useSaveCampaignMetaData"; // Import the NEW metadata hook
+} from "@/query/useSaveCampaignMetadata"; // Import the NEW metadata hook
 import clsx from "clsx";
-
+import CrowdfundingPlatformAbi from "@/lib/contracts/abis/CrowdfundingPlatform.json";
 // --- Contract Configuration ---
 // Import ABI (replace with your actual import method)
-import CrowdfundingPlatformAbi from "../../../../Blockchain/artifacts/contracts/CrowdfundingPlatform.sol/CrowdfundingPlatform.json"; // Adjust path
 const contractABI = CrowdfundingPlatformAbi.abi;
 const contractAddress = process.env
   .NEXT_PUBLIC_CROWDFUNDING_PLATFORM_ADDRESS as `0x${string}` | undefined;

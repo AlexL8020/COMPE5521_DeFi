@@ -15,6 +15,7 @@
 **/.vercel/
 **/*.js.map
 **/*.css.map
+**/lib/contracts/
 
 # Ignore Yarn Plug'n'Play files (optional)
 **/.pnp.*

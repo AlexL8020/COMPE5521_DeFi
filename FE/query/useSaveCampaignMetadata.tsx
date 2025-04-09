@@ -4,7 +4,7 @@ import axios, { AxiosError } from "axios";
 
 // Assuming API URL setup as before
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "";
 const apiClient = axios.create({ baseURL: API_BASE_URL });
 
 // Payload for SAVING metadata to the backend
