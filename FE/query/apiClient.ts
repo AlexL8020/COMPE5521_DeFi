@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Use environment variable for base URL if available, otherwise default
-const API_BASE_URL = process.env.NEXT_PUBLIC_ANALYTICS_BASE_URL; // Adjust port if needed
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL; // Adjust port if needed
 
 console.log("(--------(--------(--------API_BASE_URL", API_BASE_URL);
 const apiClient = axios.create({

@@ -7,10 +7,8 @@ import { demoUsersSeed, demoCampaignsSeed } from "./config/seedData"; // Import 
 
 dotenv.config(); // Load .env variables
 
-//const mongoUri = process.env.MONGODB_URI;
-const mongoUri = "mongodb://localhost:27017/DeFi";
+const mongoUri = process.env.MONGODB_URI??"";
 //const dbName = process.env.MONGODB_DB_NAME;
-const dbName = "DeFi";
 
 // if (!mongoUri) {
 //   console.error(
@@ -20,10 +18,6 @@ const dbName = "DeFi";
 // }
 
 // Add authSource=admin for consistency
-const baseUri = mongoUri.split("?")[0];
-const dbPart = dbName ? `/${dbName}` : "";
-const optionsPart = "?authSource=admin&retryWrites=true&w=majority";
-const fullUri = `${baseUri}${dbPart}${optionsPart}`;
 
 const connectAndSeed = async () => {
   let connection; // Keep track of the connection

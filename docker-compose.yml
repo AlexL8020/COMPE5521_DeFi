@@ -1,0 +1,40 @@
+# ./Proj/docker-compose.yml
+
+services:
+  backend:
+    build:
+      context: ./BE
+      dockerfile: Dockerfile
+    container_name: myapp-backend
+    ports:
+      - "3001:3001"
+    volumes:
+      # Mount backend source code
+      - ./BE:/app
+      # Isolate node_modules
+      - /app/node_modules
+      # Mount Blockchain artifacts to the ROOT path the code expects
+      # Host Path: ./Blockchain/artifacts (relative to this docker-compose.yml)
+      # Container Path: /Blockchain/artifacts (absolute path inside container)
+      - ./Blockchain/artifacts:/Blockchain/artifacts:ro # <<< CHANGED Target Path
+    depends_on:
+      - mongo
+    env_file:
+      - ./BE/.env
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/DeFi
+      NODE_ENV: development
+      # RPC_URL: http://host.docker.internal:8545
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:latest
+    container_name: myapp-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: always
+
+volumes:
+  mongo-data:

@@ -6,9 +6,9 @@ dotenv.config(); // Load .env file variables (primarily for non-Docker runs)
 
 // Read variables passed by Docker Compose environment
 //const mongoUri_base = process.env.MONGODB_URI; // Reads base URI e.g., mongodb://user:pass@mongo:27017
-const mongoUri_base = "mongodb://localhost:27017/DeFi";
-//const dbName = process.env.MONGODB_DB_NAME;
-const dbName = "DeFi";
+// const mongoUri_base = "mongodb://localhost:27017/DeFi";
+const mongoUri_base = process.env.MONGODB_URI;
+// const dbName = "DeFi";
 
 if (!mongoUri_base) {
   console.error(
@@ -19,8 +19,8 @@ if (!mongoUri_base) {
 
 // Construct the full URI: Append DB name and explicitly add authSource=admin
 // Ensure base URI doesn't already contain query params before appending
-const baseUri = mongoUri_base.split("?")[0];
-const dbPart = dbName ? `/${dbName}` : "";
+// const baseUri = mongoUri_base.split("?")[0];
+// const dbPart = dbName ? `/${dbName}` : "";
 
 // Define standard options, including authSource
 const optionsPart = "?authSource=admin&retryWrites=true&w=majority";
@@ -41,9 +41,7 @@ export const connectDB = async (): Promise<void> => {
         "//<username>:<password>@"
       )}`
     ); // Log full URI safely
-    if (dbName) {
-      console.log(`Target Database name: ${dbName}`);
-    }
+
 
     await mongoose.connect(fullUri); // Use the explicitly constructed URI
 
