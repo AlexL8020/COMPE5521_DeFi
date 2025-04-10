@@ -39,6 +39,8 @@ This document outlines the steps to set up the blockchain, backend server, and r
 
 This section details setting up the Node.js backend server and MongoDB for managing off-chain data. You can choose either Docker-based setup or manual setup.
 
+**Before proceeding, create a `.env` file in the `BE` directory based on the `.env.example` file and configure the necessary environment variables.**
+
 ### 2a) Docker-Based Setup (Recommended)
 
 1.  Navigate to the project root directory:
@@ -88,6 +90,8 @@ This section details setting up the Node.js backend server and MongoDB for manag
 ## 3. Frontend Setup
 
 *(Note: The instructions are incomplete. Fill in the correct directory)*
+
+**Before proceeding, create a `.env` file in the frontend directory based on the `.env.example` file and configure the necessary environment variables.**
 
 1.  Navigate to the frontend directory
 
