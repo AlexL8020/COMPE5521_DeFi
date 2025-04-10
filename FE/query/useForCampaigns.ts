@@ -1,119 +1,102 @@
-// src/hooks/useCampaignMutations.ts
 import {
+  useQuery,
   useMutation,
   useQueryClient,
+  QueryKey,
+  UseQueryResult,
   UseMutationResult,
 } from "@tanstack/react-query";
-import apiClient from "./apiClient"; // Assuming you have apiClient configured like in useForUser.ts
-// src/hooks/campaignTypes.ts (or similar file)
+import apiClient from "./apiClient"; // Assuming apiClient is configured
 import { AxiosError } from "axios";
 
-// Payload for creating a campaign
-// Aligned with CampaignFormData types, plus creatorWallet
-export interface CreateCampaignPayload {
-  title: string;
-  category: string;
-  shortDescription: string;
-  image: string | null; // Updated to allow null
-  fullDescription: string;
-  timeline: string; // Updated to string
-  aboutYou: string;
-  fundingGoal: string; // Updated to string
-  duration: string; // Updated to string
-  creatorWallet: string; // Still required for the API payload
+// --- TypeScript Interfaces ---
+
+// User profile structure (from your existing code)
+export interface UserProfile {
+  _id: string;
+  walletAddress: string;
+  name: string;
+  email?: string;
+  profilePictureUrl?: string;
+  bio?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// Expected response structure from POST /api/v1/campaign
-// Adjust based on your actual backend response
-export interface CreateCampaignApiResponse {
-  message: string;
-  campaign: {
-    _id: string;
-    title: string;
-    // ... other campaign fields returned by the API
-  };
+
+
+// Payload for creating a user (from your existing code)
+export interface CreateUserPayload {
+  walletAddress: string;
+  name: string;
+  email?: string;
+  profilePictureUrl?: string;
+  bio?: string;
 }
 
-// Re-use or define a standard API error structure
-export interface ApiError {
+
+
+// Custom error type (from your existing code)
+interface ApiError {
   message: string;
   error?: string;
-  statusCode?: number;
 }
 
-// Define the specific type for the mutation hook result
-// (No changes needed here, but ensure it's defined)
-export type UseCreateCampaignMutationResult = UseMutationResult<
-  CreateCampaignApiResponse,
-  AxiosError<ApiError>,
-  CreateCampaignPayload
->;
+// --- NEW: Interface for Campaign Info returned by the backend ---
+// Matches the CampaignInfo type defined in the backend blockchainService
+export interface CampaignInfo {
+  campaignId: number;
+  creator: string;
+  goal: string;       // Formatted string (e.g., "1.5")
+  deadline: number;   // Unix timestamp in milliseconds
+  amountRaised: string; // Formatted string (e.g., "0.2")
+  claimed: boolean;
+  active: boolean;
+}
+// --- NEW HOOK ---
 
 /**
- * Hook to create a new campaign via POST /api/v1/campaign.
+ * Hook to fetch campaigns created by a specific wallet address.
+ * Calls GET /campaign/by-creator/:creatorAddress
  *
- * @returns React Query mutation result object for creating a campaign.
+ * @param creatorAddress The wallet address of the campaign creator (string | null | undefined).
+ * @returns React Query result object for the list of campaigns.
  */
-export const useCreateCampaign = (): UseMutationResult<
-  CreateCampaignApiResponse,
-  AxiosError<ApiError>,
-  CreateCampaignPayload
-> => {
-  const queryClient = useQueryClient();
+export const useGetCampaignsByCreator = (
+  creatorAddress: string | null | undefined
+): UseQueryResult<CampaignInfo[], AxiosError<ApiError>> => {
+  // Define a unique query key including the creator address
+  const queryKey: QueryKey = ["campaigns", "byCreator", creatorAddress];
 
-  // The async function that performs the API call
-  const createCampaign = async (
-    campaignData: CreateCampaignPayload
-  ): Promise<CreateCampaignApiResponse> => {
-    console.log("Attempting to create campaign with payload:", campaignData);
-    const { image, ...rest } = campaignData;
-    // Use your configured apiClient (e.g., Axios instance)
-    // It likely handles JSON stringification and headers automatically
-    const response = await apiClient.post<CreateCampaignApiResponse>(
-      "/campaign", // Your campaign creation endpoint
-      campaignData
+  // Define the asynchronous function to fetch the data
+  const fetchCampaigns = async (): Promise<CampaignInfo[]> => {
+    if (!creatorAddress) {
+      // This should not be called if 'enabled' is false, but good practice
+      throw new Error("Creator address is required to fetch campaigns.");
+    }
+    console.log(`Fetching campaigns for creator: ${creatorAddress}`);
+    // Make the GET request to the backend endpoint
+    const response = await apiClient.get<CampaignInfo[]>(
+      `/campaigns/by-creator/${creatorAddress}` // Note: Changed endpoint prefix based on backend route
     );
-    console.log("Campaign creation API response:", response.data);
-    return response.data;
+    console.log(`Found ${response.data.length} campaigns for ${creatorAddress}`);
+    return response.data; // The backend returns the array directly
   };
 
-  return useMutation<
-    CreateCampaignApiResponse,
-    AxiosError<ApiError>,
-    CreateCampaignPayload
-  >({
-    mutationFn: createCampaign,
-    onSuccess: (data, variables) => {
-      // --- Success Handling ---
-      console.log("Campaign created successfully via useMutation:", data);
-
-      // --- Invalidate Queries (Optional but Recommended) ---
-      // If you have queries that fetch lists of campaigns or the specific
-      // user's campaigns, invalidate them here so they refetch fresh data.
-      // Example: Invalidate a query fetching all campaigns
-      // queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-      // Example: Invalidate campaigns related to the creator
-      // queryClient.invalidateQueries({ queryKey: ['campaigns', 'creator', variables.creatorWallet] });
-
-      // --- Side Effects (Optional) ---
-      // e.g., Show a success notification to the user
-      // alert("Campaign launched successfully!");
-      // You might trigger navigation here as well
-    },
-    onError: (error, variables) => {
-      // --- Error Handling ---
-      console.error(
-        "Error creating campaign via useMutation:",
-        error.response?.data || error.message
-      );
-
-      // --- Side Effects (Optional) ---
-      // e.g., Show an error notification to the user
-      // alert(`Failed to launch campaign: ${error.response?.data?.message || error.message}`);
-    },
-    // You can add onMutate or onSettled callbacks if needed
-    // onSettled: () => {
-    //   console.log("Mutation settled (either success or error)");
-    // },
+  // Use the useQuery hook
+  return useQuery<CampaignInfo[], AxiosError<ApiError>>({
+    queryKey: queryKey,
+    queryFn: fetchCampaigns,
+    // Only run the query if the creatorAddress is provided
+    enabled: !!creatorAddress,
+    // Optional: Configure staleTime, refetchOnWindowFocus, retry, etc.
+    staleTime: 5 * 60 * 1000, // Data considered fresh for 5 minutes
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      // Don't retry excessively for client errors like invalid address (though backend validates)
+      if (error.response?.status === 400) return false;
+      // Standard retry for server/network errors
+      return failureCount < 2;
+    }
   });
 };

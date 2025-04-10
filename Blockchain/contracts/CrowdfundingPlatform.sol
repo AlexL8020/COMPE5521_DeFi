@@ -36,6 +36,14 @@ contract CrowdfundingPlatform is Ownable {
     event RefundIssued(uint256 campaignId, address contributor, uint256 amount);
     event CampaignCancelled(uint256 campaignId);
 
+    // Event to emit the selector received by the fallback function
+    event FallbackCalled(
+        bytes4 selector,
+        address sender,
+        uint256 value,
+        bytes data
+    );
+
     constructor(address _stableCoinAddress) Ownable(msg.sender) {
         stableCoin = IERC20(_stableCoinAddress);
     }
@@ -191,5 +199,24 @@ contract CrowdfundingPlatform is Ownable {
         uint256 _campaignId
     ) external view returns (address[] memory) {
         return campaigns[_campaignId].backers;
+    }
+
+    receive() external payable {
+        // You could add logic here if needed, e.g., emit an event
+        // console.log("Receive() called with value:", msg.value);
+    }
+
+    /**
+     * @dev Fallback function to catch calls with unrecognized selectors or plain ETH transfers.
+     * Emits an event with the received function selector (msg.sig) for debugging.
+     * It's marked payable to also catch direct ETH sends if any occur, though
+     * the primary goal here is to catch unrecognized function calls during simulation.
+     */
+    fallback() external payable {
+        // console.log("Fallback triggered by:", msg.sender); // Uncomment for Hardhat console logging
+        // console.log("   Selector (msg.sig):", msg.sig);
+        // console.log("   Value (msg.value):", msg.value);
+        // console.log("   Data (msg.data):", msg.data);
+        emit FallbackCalled(msg.sig, msg.sender, msg.value, msg.data);
     }
 }

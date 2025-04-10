@@ -50,9 +50,13 @@ import {
 } from "@/query/useSaveCampaignMetadata"; // Import the NEW metadata hook
 import clsx from "clsx";
 import CrowdfundingPlatformAbi from "@/lib/contracts/abis/CrowdfundingPlatform.json";
+// import { crowdfundingPlatformAbiConst } from "@/abi/abi"
+
 // --- Contract Configuration ---
 // Import ABI (replace with your actual import method)
-const contractABI = CrowdfundingPlatformAbi.abi;
+const contractABI = CrowdfundingPlatformAbi.abi
+// const contractABI = crowdfundingPlatformAbiConst
+
 const contractAddress = process.env
   .NEXT_PUBLIC_CROWDFUNDING_PLATFORM_ADDRESS as `0x${string}` | undefined;
 
@@ -196,6 +200,14 @@ export default function CreateCampaignPage() {
         abi: contractABI,
         functionName: "createCampaign",
         args: [goalInWei, BigInt(durationValue)], // Use BigInt for uint256 duration
+      }, {
+        onError: (error) => {
+          console.log("Error initiating transaction:", error);
+          setTxError(`Transaction failed: ${error.message}`);
+        },
+        onSettled: () => {
+          console.log("Transaction settled (either success or failure).");
+        },
       });
       // Execution continues in the useEffect below once hash is available and tx confirmed
     } catch (err: any) {
@@ -299,8 +311,7 @@ export default function CreateCampaignPage() {
       // Error saving metadata already logged in the hook's onError
       // Optionally set a state here to show a specific UI message for metadata save failure
       setTxError(
-        `Metadata Save Failed: ${
-          saveMetadataError.response?.data?.message || saveMetadataError.message
+        `Metadata Save Failed: ${saveMetadataError.response?.data?.message || saveMetadataError.message
         }`
       );
     }
@@ -335,7 +346,7 @@ export default function CreateCampaignPage() {
             Share your educational goals with potential backers
           </p>
         </div>
-        <ThemeToggle />
+        {/* <ThemeToggle /> */}
       </div>
 
       <StepBar currentStep={currentStep} />
@@ -390,11 +401,10 @@ const StepBar = ({ currentStep }: { currentStep: number }) => {
         {[1, 2, 3].map((step) => (
           <div
             key={step}
-            className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              currentStep >= step
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background border-muted text-muted-foreground"
-            }`}
+            className={`relative z-10 flex items-center justify-center w-10 h-10 rounded-full border-2 ${currentStep >= step
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-background border-muted text-muted-foreground"
+              }`}
           >
             {step}
           </div>
@@ -682,7 +692,7 @@ function FundingAndReviewStep({
 
         {/* Funding Goal Input */}
         <div className="space-y-2">
-          <Label htmlFor="fundingGoal">Funding Goal (ETH)</Label>
+          <Label htmlFor="fundingGoal">Funding Goal (MSC)</Label>
           <Input
             id="fundingGoal"
             type="number"
@@ -691,7 +701,6 @@ function FundingAndReviewStep({
             step="0.01" // Adjust step
             value={formData.fundingGoal}
             onChange={handleInputChange}
-            disabled={buttonState.disabled && !isSuccess} // Disable if processing
           />
           <p className="text-xs text-muted-foreground">
             Enter the total amount of ETH you aim to raise.
@@ -704,7 +713,6 @@ function FundingAndReviewStep({
           <Select
             value={formData.duration}
             onValueChange={(value) => handleSelectChange("duration", value)}
-            disabled={buttonState.disabled && !isSuccess} // Disable if processing
           >
             <SelectTrigger>
               <SelectValue placeholder="Select duration" />
@@ -738,9 +746,8 @@ function FundingAndReviewStep({
               </span>
             </div>
             <ChevronDown
-              className={`h-4 w-4 transition-transform ${
-                reviewExpanded ? "rotate-180" : ""
-              }`}
+              className={`h-4 w-4 transition-transform ${reviewExpanded ? "rotate-180" : ""
+                }`}
             />
           </CollapsibleTrigger>
           <CollapsibleContent className="border-t">
@@ -774,7 +781,7 @@ function FundingAndReviewStep({
                     </h4>
                     <p className="font-medium">
                       {formData.fundingGoal
-                        ? `${formData.fundingGoal} ETH`
+                        ? `${formData.fundingGoal} MSC`
                         : "Not set"}
                     </p>
                   </div>

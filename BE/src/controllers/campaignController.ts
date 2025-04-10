@@ -99,12 +99,12 @@ export const campaignController = {
         // On-chain data (funding status)
         blockchain: blockchainData
           ? {
-              amountRaised: blockchainData.amountRaised,
-              goal: blockchainData.goal,
-              deadline: blockchainData.deadline,
-              active: blockchainData.active,
-              claimed: blockchainData.claimed,
-            }
+            amountRaised: blockchainData.amountRaised,
+            goal: blockchainData.goal,
+            deadline: blockchainData.deadline,
+            active: blockchainData.active,
+            claimed: blockchainData.claimed,
+          }
           : null,
       };
 
@@ -114,4 +114,6 @@ export const campaignController = {
       return res.status(500).json({ message: "Server error" });
     }
   },
+
+
 };

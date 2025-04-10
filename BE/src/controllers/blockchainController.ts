@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import { blockchainService } from "../services/blockchainService";
+import { blockchainService, CampaignInfo } from "../services/blockchainService";
 import User from "../models/User";
+import { ethers } from "ethers";
 
 export const mintTokens = async (req: Request, res: Response) => {
     try {
@@ -134,3 +135,30 @@ export const contributeToCampaign = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Server error" });
     }
 };
+
+
+export const getOnChainCampaignByCreator = async (req: Request, res: Response) => {
+    const { creatorAddress } = req.params;
+
+    // Basic validation
+    if (!ethers.isAddress(creatorAddress)) {
+        res.status(400).json({ message: "Invalid creator wallet address format." });
+    }
+
+    try {
+        console.log(`API request for campaigns by creator: ${creatorAddress}`);
+        const campaigns: CampaignInfo[] | null = await blockchainService.getCampaignsByCreator(creatorAddress);
+
+        if (campaigns === null) {
+            // Error occurred within the service
+            res.status(500).json({ message: "Failed to fetch campaigns from blockchain." });
+        }
+
+        // Success - return the found campaigns (could be an empty array)
+        res.status(200).json(campaigns);
+
+    } catch (error) {
+        console.error(`Error in /campaigns/by-creator/${creatorAddress} route:`, error);
+        res.status(500).json({ message: "Server error fetching campaigns." });
+    }
+}

@@ -7,7 +7,9 @@ import { CampaignDetails, RawCampaignDetails } from "../types/blockchainTypesx";
 import { CampaignCreationResult } from "../types/campaignTypes";
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") }); // Load .env from root
-
+export interface CampaignInfo extends CampaignDetails {
+  campaignId: number;
+}
 // --- ABI Loading ---
 const mockStableCoinArtifact = JSON.parse(
   fs.readFileSync(
@@ -253,6 +255,66 @@ export const blockchainService = {
         error
       );
       return false;
+    }
+  },
+
+  // --- NEW FUNCTION ---
+  /**
+   * Fetches campaign details for all campaigns created by a specific address.
+   * NOTE: This iterates through all campaigns on-chain. Inefficient for large numbers.
+   * Consider off-chain indexing for production.
+   * @param creatorAddress The address of the campaign creator.
+   * @returns A promise resolving to an array of CampaignInfo objects or null on error.
+   */
+  getCampaignsByCreator: async (
+    creatorAddress: string
+  ): Promise<CampaignInfo[] | null> => {
+    console.log(`Fetching campaigns created by: ${creatorAddress}`);
+    try {
+      // 1. Get total campaign count
+      const countBigInt = await crowdfundingPlatform.campaignCount();
+      const count = Number(countBigInt);
+      console.log(`Total campaigns on platform: ${count}`);
+
+      if (count === 0) {
+        return []; // No campaigns exist yet
+      }
+
+      // 2. Create an array of campaign IDs to fetch
+      const campaignIds = Array.from({ length: count }, (_, i) => i); // [0, 1, ..., count-1]
+
+      // 3. Fetch details for all campaigns concurrently
+      const campaignDetailPromises = campaignIds.map(id =>
+        blockchainService.getCampaignDetails(id) // Reuse existing typed function
+          .then(details => ({ id, details })) // Keep track of ID
+          .catch(err => {
+            // Handle potential errors fetching individual campaigns
+            console.error(`Error fetching details for campaign ID ${id}:`, err);
+            return { id, details: null }; // Return null details on error
+          })
+      );
+
+      const campaignResults = await Promise.all(campaignDetailPromises);
+
+      // 4. Filter results for the target creator and valid details
+      const creatorCampaigns: CampaignInfo[] = [];
+      const normalizedCreatorAddress = creatorAddress.toLowerCase();
+
+      for (const result of campaignResults) {
+        if (result.details && result.details.creator.toLowerCase() === normalizedCreatorAddress) {
+          creatorCampaigns.push({
+            campaignId: result.id,
+            ...result.details,
+          });
+        }
+      }
+
+      console.log(`Found ${creatorCampaigns.length} campaigns for ${creatorAddress}`);
+      return creatorCampaigns;
+
+    } catch (error) {
+      console.error(`Error fetching campaigns for creator ${creatorAddress}:`, error);
+      return null; // Indicate failure
     }
   },
 

@@ -3,6 +3,7 @@ import express, { Request, Response } from "express";
 import CampaignMetadata from "../models/CampaignMetadata";
 import User from "../models/User";
 import { blockchainService } from "../services/blockchainService";
+import { getOnChainCampaignByCreator } from "../controllers/blockchainController";
 
 const router = express.Router();
 
@@ -102,5 +103,5 @@ router.get("/:contractAddress", async (req: Request, res: Response) => {
 });
 
 // Other campaign routes...
-
+router.get("/by-creator/:creatorAddress", getOnChainCampaignByCreator)
 export default router;
