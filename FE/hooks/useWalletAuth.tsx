@@ -48,6 +48,10 @@ export function useWalletAuth() {
       });
     } catch (error) {
       console.error("Error connecting wallet:", error);
+      if (error?.code == "-32002") {
+        console.log("Please check your wallet for connection request.");
+      
+      }
     } finally {
       setLoading(false);
     }

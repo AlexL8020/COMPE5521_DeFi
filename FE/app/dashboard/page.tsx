@@ -20,6 +20,7 @@ import { ArrowUpRight, Edit, Trash2, AlertCircle, User } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import WalletLogin from "@/components/WalletLogin";
 import { useUserProfile } from "@/query/useForUser";
+import { useWalletBalance } from "@/query/useForBlockchain";
 
 export default function DashboardPage() {
   const { connectWallet, disconnectWallet, loading } = useWalletAuth();
@@ -31,7 +32,9 @@ export default function DashboardPage() {
     !userWalletAddress
   );
 
-  console.log("=============================== User Profile:", userProfile);
+  const { data } = useWalletBalance(userWalletAddress);
+
+  console.log("========== useWalletBalance", data);
 
   return (
     <div className="container py-8">
@@ -154,16 +157,16 @@ export default function DashboardPage() {
                       {id === 3
                         ? "Renewable Energy Research Project"
                         : id === 4
-                        ? "Medical School Funding"
-                        : "Educational App Development"}
+                          ? "Medical School Funding"
+                          : "Educational App Development"}
                     </CardTitle>
                     <CardDescription>
                       Contributed on{" "}
                       {id === 3
                         ? "Oct 5, 2023"
                         : id === 4
-                        ? "Oct 12, 2023"
-                        : "Nov 1, 2023"}
+                          ? "Oct 12, 2023"
+                          : "Nov 1, 2023"}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pb-2">
@@ -177,8 +180,8 @@ export default function DashboardPage() {
                             {id === 3
                               ? "0.5 ETH"
                               : id === 4
-                              ? "0.25 ETH"
-                              : "0.75 ETH"}
+                                ? "0.25 ETH"
+                                : "0.75 ETH"}
                           </div>
                         </div>
                         <Badge variant="outline">Active</Badge>
@@ -190,8 +193,8 @@ export default function DashboardPage() {
                             {id === 3
                               ? "2.25 ETH"
                               : id === 4
-                              ? "4.5 ETH"
-                              : "3.2 ETH"}{" "}
+                                ? "4.5 ETH"
+                                : "3.2 ETH"}{" "}
                             raised
                           </span>
                           <span className="text-muted-foreground">
@@ -243,7 +246,7 @@ export default function DashboardPage() {
                         <p className="text-sm font-medium text-muted-foreground">
                           Name
                         </p>
-                        <p className="font-medium">{userProfile?.user.name}</p>
+                        <p className="font-medium">{userProfile?.user?.name}</p>
                       </div>
 
                       <div className="space-y-1">
@@ -251,7 +254,7 @@ export default function DashboardPage() {
                           Email
                         </p>
                         <p className="font-medium">
-                          {userProfile?.user.email || "Not provided"}
+                          {userProfile?.user?.email || "Not provided"}
                         </p>
                       </div>
                     </div>
@@ -261,7 +264,7 @@ export default function DashboardPage() {
                         Wallet Address
                       </p>
                       <p className="font-medium break-all">
-                        {userProfile?.user.walletAddress}
+                        {userProfile?.user?.walletAddress}
                       </p>
                     </div>
 
@@ -269,7 +272,7 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium text-muted-foreground">
                         Bio
                       </p>
-                      <p>{userProfile?.user.bio || "No bio provided"}</p>
+                      <p>{userProfile?.user?.bio || "No bio provided"}</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -279,7 +282,7 @@ export default function DashboardPage() {
                         </p>
                         <p className="font-medium">
                           {new Date(
-                            userProfile?.user.createdAt
+                            userProfile?.user?.createdAt
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -290,7 +293,7 @@ export default function DashboardPage() {
                         </p>
                         <p className="font-medium">
                           {new Date(
-                            userProfile?.user.updatedAt
+                            userProfile?.user?.updatedAt
                           ).toLocaleDateString()}
                         </p>
                       </div>
@@ -357,6 +360,14 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
+                {/* Show current available balance */}
+                {
+                  session?.user?.address ? <div className="flex items-center gap-2">
+                    <h3 className="font-medium">Available Balance:</h3>
+                    <p className="font-medium">{data?.balance ?
+                      data?.balance + " MSC (MOCK STABLE COIN)"
+                      : "--"}</p></div> : null
+                }
 
                 <div className="space-y-2">
                   <h3 className="font-medium">Recent Transactions</h3>
