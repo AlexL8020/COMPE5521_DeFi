@@ -10,9 +10,9 @@ import {
 export default function FAQPage() {
   const faqs = [
     {
-      question: "What is Defi-CrowdFund?",
+      question: "What is StudentFund?",
       answer:
-        "Defi-CrowdFund is a decentralized crowdfunding platform specifically designed for educational purposes. It allows students and educators to raise funds for tuition, research projects, and educational initiatives using cryptocurrency.",
+        "StudentFund is a decentralized crowdfunding platform specifically designed for educational purposes. It allows students and educators to raise funds for tuition, research projects, and educational initiatives using cryptocurrency.",
     },
     {
       question: "How do I create a campaign?",
