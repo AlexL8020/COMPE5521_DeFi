@@ -37,17 +37,16 @@ This document outlines the steps to set up the blockchain, backend server, and r
         ```bash
         npx hardhat run scripts/deploy.ts --network localhost
         ```
+    *   **Take Note:** The output of this script will show the deployed addresses for `MockStableCoin` and `CrowdfundingPlatform`. You'll need the `MockStableCoin` address for MetaMask.
     *   This script will also copy necessary ABI files to the frontend project.
-
-    there are output address of the coin and campaign smart contract address in the log after running the deploy script. Please set up .env for both FE and BE
 
 ## 2. Backend Server and Database Setup
 
-This section details setting up the Node.js backend server and MongoDB for managing off-chain data. You can choose either Docker-based setup OR manual setup.
+This section details setting up the Node.js backend server and MongoDB for managing off-chain data. You can choose either Docker-based setup or manual setup.
 
-**Before proceeding, create a `.env` file in the `BE` directory based on the `.env.example` file and configure the necessary environment variables.** Ensure `RPC_URL` is set correctly (e.g., `RPC_URL=http://host.docker.internal:8545` for Docker setup if Hardhat runs on host, or `RPC_URL=http://127.0.0.1:8545` for manual setup).
+**Before proceeding, create a `.env` file in the `BE` directory based on the `.env.example` file and configure the necessary environment variables.** Ensure `RPC_URL` is set correctly (e.g., `RPC_URL=http://host.docker.internal:8545` for Docker setup if Hardhat runs on host, or `RPC_URL=http://127.0.0.1:8545` for manual setup). Also ensure the deployed contract addresses from Step 1.4 are correctly set in the backend `.env`.
 
-### 2a) Docker-Based Setup 
+### 2a) Docker-Based Setup (Recommended)
 
 1.  Navigate to the project root directory:
 
@@ -63,10 +62,9 @@ This section details setting up the Node.js backend server and MongoDB for manag
 
     This command builds the Docker images and starts the containers for the backend server and MongoDB. Keep this terminal running.
 
-### 2b) Manual Setup (Recommended)
+### 2b) Manual Setup
 
-1.  Ensure you have a local MongoDB instance running (e.g., by starting the `mongo` service from the Docker Compose file at <the-proj-root>).
-![image info](./image.png)
+1.  Ensure you have a local MongoDB instance running (e.g., by starting the `mongo` service from the Docker Compose file if desired, or running `mongod` directly).
 
 2.  Navigate to the backend directory:
 
@@ -80,7 +78,7 @@ This section details setting up the Node.js backend server and MongoDB for manag
     npm install
     ```
 
-4.  Start the backend server
+4.  Start the backend server using one of the following methods:
 
     *   Using `npm`:
 
@@ -88,11 +86,16 @@ This section details setting up the Node.js backend server and MongoDB for manag
         npm run dev:tsnode
         ```
 
+    *   Using `nodemon` directly:
+
+        ```bash
+        npx nodemon src/server.ts
+        ```
     Keep this terminal running.
 
 ## 3. Frontend Setup
 
-**Before proceeding, create a `.env.local` file in the frontend directory (`FE`) based on the `.env.example` file and configure the necessary environment variables (like `NEXT_PUBLIC_...` contract addresses).**
+**Before proceeding, create a `.env.local` file in the frontend directory (`FE`) based on the `.env.example` file and configure the necessary environment variables (like `NEXT_PUBLIC_...` contract addresses obtained from the deployment script in Step 1.4).**
 
 1.  Navigate to the frontend directory:
 
@@ -134,10 +137,11 @@ To interact with the deployed smart contracts from the frontend application, you
 
 1.  Go back to the terminal where you ran `npx hardhat node`.
 2.  Copy one of the **Private Keys** listed (e.g., `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`). **Never share real private keys! These are only for local testing.**
-3.  In MetaMask, click the account circle icon at the top right.
-4.  Select "Import account".
-5.  Paste the copied **Private Key** into the field.
-6.  Click "Import". You should see the account added with a balance of 10000 ETH (or GO).
+3.  In MetaMask, ensure the **Hardhat Localhost** network is selected.
+4.  Click the account circle icon at the top right.
+5.  Select "Import account".
+6.  Paste the copied **Private Key** into the field.
+7.  Click "Import". You should see the account added with a balance of 10000 ETH (or GO) after selecting the Hardhat Localhost you just add.
 
 ### 4c) Connect to the Application
 
@@ -146,4 +150,17 @@ To interact with the deployed smart contracts from the frontend application, you
 3.  Navigate to your running frontend application (usually `http://localhost:3000`).
 4.  When prompted by the application (or by clicking a "Connect Wallet" button), approve the connection request in MetaMask.
 
-You are now set up to interact with the smart contracts on your local Hardhat network through the frontend application using a test account.
+### 4d) Import Mock Stable Coin (MSC) Token
+
+After you register/complete your profile in the frontend application, the backend should mint Mock Stable Coins (MSC) to your imported Hardhat account. To see these tokens in MetaMask:
+
+1.  Find the **`MockStableCoin` contract address** from the output of the deployment script (`npx hardhat run scripts/deploy.ts ...` in Step 1.4) or from your frontend's environment variables (e.g., `NEXT_PUBLIC_MOCK_STABLE_COIN_ADDRESS`).
+2.  In MetaMask, ensure you are on the **Hardhat Localhost** network and have your **imported Hardhat account** selected.
+3.  Go to the "Assets" tab.
+4.  Scroll down and click "Import tokens".
+5.  Paste the **`MockStableCoin` contract address** into the "Token contract address" field.
+6.  The "Token symbol" (should be `MSC`) and "Token decimal" (should be `18`) should populate automatically. If not, enter them manually.
+7.  Click "Add custom token".
+8.  Click "Import tokens".
+
+You should now see MSC listed under your assets, and if the backend successfully minted tokens upon your registration, you will see your balance (e.g., 1000 MSC).

@@ -7,35 +7,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import WalletLogin from "@/components/WalletLogin";
 import { useState, useEffect } from "react";
 import { API_CONFIG } from "./API"; // Your API config file
+import { useGetMergedCampaigns } from "@/query/useForCampaigns";
 
 export default function Home() {
-  const [campaigns, setCampaigns] = useState([]); // State to hold fetched campaigns
-  const [loading, setLoading] = useState(true); // Optional: Loading state
+  const { data: campaigns, isLoading: loading } = useGetMergedCampaigns()
 
-  useEffect(() => {
-    const fetchCampaigns = async () => {
-      try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setCampaigns(data.slice(0, 3)); // Limit to 3 campaigns for display
-          setLoading(false);
-        } else {
-          console.error("Failed to fetch campaigns:", response.status);
-        }
-      } catch (error) {
-        console.error("Error fetching campaigns:", error);
-        setLoading(false);
-      }
-    };
-
-    fetchCampaigns();
-  }, []); // Empty dependency array to run once on mount
+  // Empty dependency array to run once on mount
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -185,16 +162,18 @@ export default function Home() {
               <p className="text-center">Loading campaigns...</p>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {campaigns.length === 0 ? (
+                {campaigns?.length === 0 ? (
                   //  messages to users if no campaigns are found
                   <p className="text-center col-span-full">
                     No campaigns found. Please check back later.
                   </p>
                 ) : (
-                  campaigns.map((campaign) => {
+                  campaigns?.filter((_, i) => i < 3).map((campaign, i) => {
                     // Convert progress and fundingGoal to numbers
-                    const progress = Number(campaign.progress);
-                    const fundingGoal = Number(campaign.fundingGoal);
+                    const progress = Number(campaign.amountRaised);
+                    const fundingGoal = Number(campaign.blockchainGoal);
+
+
 
                     // Calculate progress percentage
                     const progressPercentage =
@@ -204,14 +183,14 @@ export default function Home() {
 
                     return (
                       <Link
-                        href={`/campaigns/${campaign._id}`}
-                        key={campaign._id}
+                        href={`/campaigns/${campaign.frontendTrackerId}`}
+                        key={campaign.frontendTrackerId}
                         className="group"
                       >
                         <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
                           <div className="aspect-video relative bg-muted">
                             <img
-                              src={campaign.image} // Base64 string from MongoDB
+                              src={campaign.imageUrl} // Base64 string from MongoDB
                               alt={campaign.title}
                               className="object-cover w-full h-full"
                             />
@@ -221,7 +200,7 @@ export default function Home() {
                               {campaign.title}
                             </h3>
                             <p className="text-muted-foreground text-sm mb-4">
-                              {campaign.shortDescription}
+                              {campaign.description}
                             </p>
                             <div className="space-y-2">
                               <div className="w-full bg-muted rounded-full h-2">

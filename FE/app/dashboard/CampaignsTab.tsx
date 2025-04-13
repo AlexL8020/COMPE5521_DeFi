@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Edit, Trash2, ArrowUpRight } from "lucide-react";
 import { CampaignInfo } from "@/query/useForCampaigns";
 import { MergedCampaignData } from "../../../BE/src/services/campaignService";
+import { MyCampaignCard } from "./MyCampaignCard";
 
 export default function CampaignsTab({ campaignInfo }: { campaignInfo: Partial<MergedCampaignData>[] | undefined }) {
 
@@ -27,6 +28,9 @@ export default function CampaignsTab({ campaignInfo }: { campaignInfo: Partial<M
                             const numOfBackers = 0
                             const daysLeft = Math.floor((new Date((info?.deadline || 0) * 1000).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                             const active = info?.active ?? false
+
+                            return (<MyCampaignCard key={info?.frontendTrackerId} campaign={info} />)
+
                             return (
                                 <Card key={info?.frontendTrackerId}>
                                     <CardHeader className="pb-2">

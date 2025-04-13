@@ -12,9 +12,7 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap } from "lucide-react";
 import WalletLogin from "@/components/WalletLogin";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useEffect } from "react";
-import { useRouter } from "next/router";
-import { useCheckUserExists } from "@/query/useForUser";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -60,7 +58,7 @@ export default function RootLayout({
                     >
                       Browse Campaigns
                     </Link>
-                    <Link
+                    {/* <Link
                       href="/how-it-works"
                       className="text-sm font-medium hover:underline"
                     >
@@ -71,7 +69,7 @@ export default function RootLayout({
                       className="text-sm font-medium hover:underline"
                     >
                       About
-                    </Link>
+                    </Link> */}
                   </nav>
                   <div className="flex items-center gap-4">
                     <ThemeToggle />

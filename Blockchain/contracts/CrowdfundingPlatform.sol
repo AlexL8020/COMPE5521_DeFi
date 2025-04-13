@@ -109,11 +109,11 @@ contract CrowdfundingPlatform is Ownable {
         Campaign storage campaign = campaigns[_campaignId];
 
         require(msg.sender == campaign.creator, "Only creator can claim funds");
-        require(campaign.active, "Campaign is not active");
-        require(
-            block.timestamp >= campaign.deadline,
-            "Campaign has not ended yet"
-        );
+        // require(campaign.active, "Campaign is not active");
+        // require(
+        //     block.timestamp >= campaign.deadline,
+        //     "Campaign has not ended yet"
+        // );
         require(campaign.amountRaised >= campaign.goal, "Goal not reached");
         require(!campaign.claimed, "Funds already claimed");
 

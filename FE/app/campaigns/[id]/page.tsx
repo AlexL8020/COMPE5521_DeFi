@@ -11,24 +11,29 @@ import { API_CONFIG } from '../../API'; // Your API config file
 import { useGetMergedCampaigns } from '@/query/useForCampaigns';
 import React from 'react';
 import { useUserProfile } from "@/query/useForUser";
+import { ContributeForm } from "../CampaignForm";
+import { useReadContract } from "wagmi";
+import CrowdfundingPlatformAbi from "@/lib/contracts/abis/CrowdfundingPlatform.json";
+import { useSession } from "next-auth/react";
+
+
+
+
+const contractABI = CrowdfundingPlatformAbi.abi;
+const contractAddress = process.env.NEXT_PUBLIC_CROWDFUNDING_PLATFORM_ADDRESS as `0x${string}` | undefined;
+
+
 
 export default function CampaignPage({ params }: { params: { id: string } }) {
-
+  const { data: sesion } = useSession()
   const { data, isLoading, error } = useGetMergedCampaigns()
   // Unwrap the params Promise using React.use()
-  const resolvedParams = React.use(params as any);
+  const resolvedParams = React.use(params as any) as any;
 
   // Now access properties on the resolved object
   const postId = resolvedParams?.id as any;
 
 
-  if (isLoading) {
-    return <div className="container py-8 text-center">Loading campaign...</div>;
-  }
-
-  if (error || !data) {
-    return <div className="container py-8 text-center text-red-500">{error?.message || 'Campaign not found'}</div>;
-  }
 
   const targetCampaign = data?.find((campaign) => campaign.frontendTrackerId === postId)
   // Calculate progress percentage
@@ -40,9 +45,30 @@ export default function CampaignPage({ params }: { params: { id: string } }) {
   const percentFunded = fundingGoal > 0 ? Math.min((progress / fundingGoal) * 100, 100) : 0;
   const daysLeft = Math.floor((new Date((targetCampaign?.deadline || 0) * 1000).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-  // console.log("---------------targetCampaign:", )
+
+  const { data: backersArray, isLoading: isBackerLoading, error: backerError } = useReadContract({
+    address: contractAddress,
+    abi: contractABI,
+    functionName: 'getCampaignBackers',
+    args: [BigInt((targetCampaign?.blockchainCampaignId ?? 12312) as any)],
+    query: {
+      enabled: !!contractAddress && targetCampaign?.blockchainCampaignId != undefined && Number(targetCampaign?.blockchainCampaignId) >= 0, // Only run if valid
+    }
+  });
+
+  const backerCount = Array.isArray(backersArray) ? backersArray.length : 0;
+  console.log("---------------targetCampaign:", targetCampaign)
 
   const { data: creator } = useUserProfile(targetCampaign?.mongoCreatorWalletAddress || "")
+
+  if (isLoading) {
+    return <div className="container py-8 text-center">Loading campaign...</div>;
+  }
+
+  if (error || !data) {
+    return <div className="container py-8 text-center text-red-500">{error?.message || 'Campaign not found'}</div>;
+  }
+
   return (
     <div className="container py-8">
       <div className="flex justify-end mb-4">
@@ -121,24 +147,34 @@ export default function CampaignPage({ params }: { params: { id: string } }) {
           <div className="border rounded-lg p-6 bg-card">
             <div className="mb-4">
               <div className="flex justify-between mb-2">
-                <span className="font-semibold">{progress.toFixed(2)} MSC raised</span>
+                <span className="font-semibold">{raisedAmount?.toFixed(2)} MSC raised</span>
                 <span className="text-muted-foreground">of {fundingGoal} MSC goal</span>
               </div>
               <Progress value={percentFunded} className="h-2" />
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
-              {/* <div className="border rounded-md p-3 text-center">
-                <div className="text-2xl font-bold">{targetCampaign?.backers || 0}</div>
+              <div className="border rounded-md p-3 text-center">
+                <div className="text-2xl font-bold">{backerCount || 0}</div>
                 <div className="text-xs text-muted-foreground">Backers</div>
-              </div> */}
+              </div>
               <div className="border rounded-md p-3 text-center">
                 <div className="text-2xl font-bold">{daysLeft || 0}</div>
                 <div className="text-xs text-muted-foreground">Days Left</div>
               </div>
             </div>
 
-            <FundingForm />
+            {/* <FundingForm /> */}
+
+            {
+              targetCampaign?.blockchainCampaignId != undefined && targetCampaign?.mongoCreatorWalletAddress != sesion?.user?.address ? (
+                <ContributeForm campaignId={targetCampaign?.blockchainCampaignId as any} />
+              ) : (
+                targetCampaign?.mongoCreatorWalletAddress == sesion?.user?.address ? <> </> :
+                  <div className="text-red-500">Campaign ID not available</div>
+              )
+
+            }
 
             {/* <div className="flex gap-2 mt-4">
               <Button variant="outline" size="sm" className="flex-1">

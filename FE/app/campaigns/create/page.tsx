@@ -74,6 +74,8 @@ import { v4 as uuidv4 } from 'uuid'; // Import the v4 UUID generator
 import { useGetCampaignsByCreator, useSaveCampaignMetadata } from "@/query/useForCampaigns";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import WalletLogin from "@/components/WalletLogin";
 
 // ... inside your handleLaunchCampaign function, BEFORE calling writeContract ...
 
@@ -81,6 +83,8 @@ import { useRouter } from "next/navigation";
 
 // --- Component ---
 export default function CreateCampaignPage() {
+  const { data } = useSession()
+
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<CampaignFormData>({
     title: "",
@@ -401,6 +405,14 @@ export default function CreateCampaignPage() {
     return { text: "Launch Campaign", disabled: false };
   };
   const buttonState = getButtonState();
+
+
+
+  if (!data?.user) {
+    return (
+      <WalletLogin />
+    )
+  }
 
   // --- Component Render ---
   return (

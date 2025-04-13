@@ -15,10 +15,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useEffect } from 'react';
 import { API_CONFIG } from '../API'; // Your API config file
 import { useGetMergedCampaigns } from "@/query/useForCampaigns";
+import { ContributeForm } from "./CampaignForm"
+import { useSession } from "next-auth/react";
 
 export default function CampaignsPage() {
   const { data: campaigns, isLoading } = useGetMergedCampaigns()
-
+  const { data: session } = useSession();
 
   return (
     <div className="container py-8">
@@ -31,7 +33,7 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
+      {/* <div className="flex flex-col md:flex-row gap-4 mb-8">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search campaigns..." className="pl-10" />
@@ -53,7 +55,7 @@ export default function CampaignsPage() {
             <Filter className="h-4 w-4" />
           </Button>
         </div>
-      </div>
+      </div> */}
 
 
 
@@ -63,58 +65,70 @@ export default function CampaignsPage() {
         <p className="text-center">Loading campaigns...</p>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campaigns?.map((campaign) => {
-            // Convert progress and fundingGoal to numbers
-            const progress = isNaN(Number(campaign.amountRaised)) ? 0 : Number(campaign.amountRaised);
-            const fundingGoal = isNaN(Number(campaign.blockchainGoal)) ? 1 : Number(campaign.blockchainGoal);
 
-            // Calculate progress percentage
-            const progressPercentage = fundingGoal > 0
-              ? Math.round((progress / fundingGoal) * 100)
-              : 0; // Cap at 100% and handle division by zero
 
-            return (
-              <
-                Link href={`/campaigns/${campaign.frontendTrackerId}`} key={campaign._id as any} className="group">
-                <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
-                  <div className="aspect-video relative bg-muted">
-                    <img
-                      src={campaign.imageUrl} // Base64 string from MongoDB
-                      alt={campaign.title}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
-                      {campaign.title}
-                    </h3>
-                    <p className="text-muted-foreground text-sm mb-4">
-                      {campaign.description}
-                    </p>
-                    <div className="space-y-2">
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div
-                          className="bg-primary h-2 rounded-full"
-                          style={{ width: `${progressPercentage}%` }} // Real progress
-                        ></div>
+          {
+            campaigns?.length === 0 ? (
+              <div className="text-center py-12">
+                <h3 className="text-xl font-semibold mb-2">No campaigns found</h3>
+                <p className="text-muted-foreground mb-6">There are currently no campaigns available.</p>
+
+                <Link href="/campaigns/create">
+                  <Button>Create a Campaign</Button>
+                </Link>
+              </div>
+            ) :
+              campaigns?.map((campaign) => {
+                // Convert progress and fundingGoal to numbers
+                const progress = isNaN(Number(campaign.amountRaised)) ? 0 : Number(campaign.amountRaised);
+                const fundingGoal = isNaN(Number(campaign.blockchainGoal)) ? 1 : Number(campaign.blockchainGoal);
+
+                // Calculate progress percentage
+                const progressPercentage = fundingGoal > 0
+                  ? Math.round((progress / fundingGoal) * 100)
+                  : 0; // Cap at 100% and handle division by zero
+
+                return (
+                  <
+                    Link href={`/campaigns/${campaign.frontendTrackerId}`} key={campaign.frontendTrackerId as any} className="group">
+                    <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
+                      <div className="aspect-video relative bg-muted">
+                        <img
+                          src={campaign.imageUrl} // Base64 string from MongoDB
+                          alt={campaign.title}
+                          className="object-cover w-full h-full"
+                        />
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium">
-                          {progress.toFixed(2)} MSC raised
-                        </span>
-                        <span className="text-muted-foreground">
-                          {progressPercentage.toFixed(0)}% of {fundingGoal} MSC
-                        </span>
+                      <div className="p-5">
+                        <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
+                          {campaign.title}
+                        </h3>
+                        <p className="text-muted-foreground text-sm mb-4">
+                          {campaign.description}
+                        </p>
+                        <div className="space-y-2">
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                              className="bg-primary h-2 rounded-full"
+                              style={{ width: `${progressPercentage}%` }} // Real progress
+                            ></div>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="font-medium">
+                              {progress.toFixed(2)} MSC raised
+                            </span>
+                            <span className="text-muted-foreground">
+                              {progressPercentage.toFixed(0)}% of {fundingGoal} MSC
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+                  </Link>
+                );
+              })}
         </div>
       )}
-
 
 
 
