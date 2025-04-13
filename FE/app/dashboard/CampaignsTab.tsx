@@ -7,27 +7,28 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Edit, Trash2, ArrowUpRight } from "lucide-react";
 import { CampaignInfo } from "@/query/useForCampaigns";
+import { MergedCampaignData } from "../../../BE/src/services/campaignService";
 
-export default function CampaignsTab({ campaignInfo }: { campaignInfo: CampaignInfo[] | undefined }) {
-    console.log("===== campaignInfo: ", campaignInfo)
+export default function CampaignsTab({ campaignInfo }: { campaignInfo: Partial<MergedCampaignData>[] | undefined }) {
+
     return (
         <div className="flex flex-1 ">
             {
                 campaignInfo && campaignInfo?.length >= 1 ?
 
-                    <div className="grid md:grid-cols-2 gap-">
-                        {campaignInfo?.map(({ campaignId, active, goal, amountRaised, deadline }) => {
+                    <div className="grid md:grid-cols-2 gap-4">
+                        {campaignInfo?.map((info) => {
 
-
-                            const campaignName = "TBC: " + campaignId;
-                            const createdOn = "TBC"
-                            const goalAmount = parseFloat(goal);
-                            const raisedAmount = parseFloat(amountRaised);
+                            const campaignId = info?.frontendTrackerId;
+                            const campaignName = info?.title;
+                            const createdOn = info?.metadataCreatedAt?.toLocaleString() ?? "--"
+                            const goalAmount = parseFloat(info?.blockchainGoal || "1") ?? 1
+                            const raisedAmount = parseFloat(info?.amountRaised || "0");
                             const numOfBackers = 0
-                            const daysLeft = Math.floor((new Date(deadline * 1000).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-
+                            const daysLeft = Math.floor((new Date((info?.deadline || 0) * 1000).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                            const active = info?.active ?? false
                             return (
-                                <Card key={campaignId}>
+                                <Card key={info?.frontendTrackerId}>
                                     <CardHeader className="pb-2">
                                         <div className="flex justify-between items-start">
                                             <CardTitle className="text-xl">
@@ -86,14 +87,17 @@ export default function CampaignsTab({ campaignInfo }: { campaignInfo: CampaignI
                         )}
                     </div> :
 
-                    <div className="gap-2">
-                        <p className="text-muted-foreground">No campaigns found</p>
 
-                        <Link href="/campaigns/create">
-                            <Button size="sm">Start Campaign</Button>
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <h2 className="text-lg font-semibold">No Contributions Yet</h2>
+                        <p className="text-sm text-muted-foreground">how about viewing some campaigns, and starting your first contributions?</p>
+                        <Link href="/campaigns/create" className="w-full">
+                            <Button size="sm" className="w-full mt-4">
+                                Start New Campaigns
+                            </Button>
                         </Link>
-
                     </div>
+
             }
 
 

@@ -43,10 +43,11 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { ethers, Interface, Log } from "ethers";
-import {
-  useSaveCampaignMetadata,
-  SaveCampaignMetadataPayload,
-} from "@/query/useSaveCampaignMetadata"; // Ensure path is correct
+// import {
+//   useSaveCampaignMetadata,
+//   SaveCampaignMetadataPayload,
+// } from "@/query/useSaveCampaignMetadata"; 
+// Ensure path is correct
 import clsx from "clsx";
 import CrowdfundingPlatformAbi from "@/lib/contracts/abis/CrowdfundingPlatform.json"; // Ensure path is correct
 import { set } from "react-hook-form";
@@ -69,6 +70,15 @@ type CampaignFormData = {
   duration: string;
 };
 
+import { v4 as uuidv4 } from 'uuid'; // Import the v4 UUID generator
+import { useGetCampaignsByCreator, useSaveCampaignMetadata } from "@/query/useForCampaigns";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+
+// ... inside your handleLaunchCampaign function, BEFORE calling writeContract ...
+
+
+
 // --- Component ---
 export default function CreateCampaignPage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -87,6 +97,7 @@ export default function CreateCampaignPage() {
   const [createdCampaignId, setCreatedCampaignId] = useState<number | null>(
     null
   );
+  const [activeFrontendTrackerId, setActiveFrontendTrackerId] = useState<string | null>(null); // State to store the active frontend tracker ID
 
   // --- Wallet & Account ---
   const { address: creatorWallet, isConnected } = useAccount();
@@ -105,6 +116,7 @@ export default function CreateCampaignPage() {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
     error: txReceiptError,
+
   } = useWaitForTransactionReceipt({
     hash: writeContractHash,
     confirmations: 1,
@@ -200,6 +212,8 @@ export default function CreateCampaignPage() {
     }
 
     try {
+
+      console.log("=========Preparing transaction from formData...", formData);
       const goalValue = parseFloat(formData.fundingGoal);
       const durationValue = parseInt(formData.duration, 10);
       if (isNaN(goalValue) || goalValue <= 0) {
@@ -211,11 +225,14 @@ export default function CreateCampaignPage() {
       const goalInWei = ethers.parseUnits(formData.fundingGoal, 18);
 
       console.log("Calling writeContract...");
+      const frontendTrackerId = uuidv4(); // Generate a unique ID
+      console.log("Generated Frontend Tracker ID:", frontendTrackerId);
+
       writeContract({ // Call wagmi hook
         address: contractAddress,
         abi: contractABI,
         functionName: "createCampaign",
-        args: [goalInWei, BigInt(durationValue)],
+        args: [goalInWei, BigInt(durationValue), frontendTrackerId],
       }, { // Add callbacks for immediate feedback/debugging
         onSuccess: (hash) => {
           console.log("✅ writeContract Success! Tx Hash:", hash);
@@ -230,6 +247,7 @@ export default function CreateCampaignPage() {
         onSettled: (data, error) => {
           // Runs after onSuccess or onError
           console.log("ℹ️ writeContract Settled. Hash:", data, "Error:", error);
+          setActiveFrontendTrackerId(frontendTrackerId); // Store the active frontend tracker ID
         },
       });
     } catch (err: any) { // Catch synchronous errors during preparation
@@ -237,6 +255,9 @@ export default function CreateCampaignPage() {
       setTxError(`Preparation Failed: ${err.message}`);
     }
   };
+
+
+
 
   // --- Effect for Logging Hash ---
 
@@ -311,19 +332,19 @@ export default function CreateCampaignPage() {
 
       if (foundCampaignId !== null && creatorWallet) {
         setCreatedCampaignId(foundCampaignId);
-        const metadataPayload: SaveCampaignMetadataPayload = {
-          campaignId: foundCampaignId,
-          title: formData.title, category: formData.category,
-          shortDescription: formData.shortDescription, image: formData.image,
-          fullDescription: formData.fullDescription, timeline: formData.timeline,
-          aboutYou: formData.aboutYou, fundingGoal: formData.fundingGoal,
-          duration: formData.duration, creatorWallet: creatorWallet,
-        };
-        console.log("⏳ Calling saveMetadataMutate...");
-        saveMetadataMutate(metadataPayload, { // Add callbacks here too
-          onSuccess: (data) => console.log("✅ Metadata Save Success:", data),
-          onError: (error) => console.error("❌ Metadata Save Error:", error), // Error already handled by useEffect below
-        });
+        // const metadataPayload: SaveCampaignMetadataPayload = {
+        //   campaignId: foundCampaignId,
+        //   title: formData.title, category: formData.category,
+        //   shortDescription: formData.shortDescription, image: formData.image,
+        //   fullDescription: formData.fullDescription, timeline: formData.timeline,
+        //   aboutYou: formData.aboutYou, fundingGoal: formData.fundingGoal,
+        //   duration: formData.duration, creatorWallet: creatorWallet,
+        // };
+        // console.log("⏳ Calling saveMetadataMutate...");
+        // saveMetadataMutate(metadataPayload, { // Add callbacks here too
+        //   onSuccess: (data) => console.log("✅ Metadata Save Success:", data),
+        //   onError: (error) => console.error("❌ Metadata Save Error:", error), // Error already handled by useEffect below
+        // });
       } else if (!creatorWallet) {
         console.error("❌ Creator wallet missing after confirmation.");
         setTxError("Wallet address missing after confirmation.");
@@ -418,7 +439,9 @@ export default function CreateCampaignPage() {
       )}
       {currentStep === 3 && (
         <FundingAndReviewStep
+          activeFrontendTrackerId={activeFrontendTrackerId} // Pass the active frontend tracker ID
           countAfterTransHashReceived={countAfterTransHashReceived}
+          countAfterTransHashLimit={countLimit}
           formData={formData}
           handleInputChange={handleInputChange}
           handleSelectChange={handleSelectChange}
@@ -711,6 +734,8 @@ type FundingAndReviewStepProps = {
   createdCampaignId: number | null;
   prevStep: () => void;
   countAfterTransHashReceived: number;
+  countAfterTransHashLimit: number;
+  activeFrontendTrackerId: string | null; // Added prop for active frontend tracker ID
 };
 
 function FundingAndReviewStep({
@@ -723,11 +748,95 @@ function FundingAndReviewStep({
   isSuccess,
   createdCampaignId,
   prevStep,
-  countAfterTransHashReceived
+  countAfterTransHashReceived,
+  countAfterTransHashLimit,
+  activeFrontendTrackerId
 }: FundingAndReviewStepProps) {
   const [reviewExpanded, setReviewExpanded] = useState(false);
   const [isAfterExpandDelay, setIsAfterExpandDelay] = useState(false);
   const [countdown, setCountdown] = useState(3);
+
+  const { address: creatorWallet } = useAccount();
+  const { data: creatorCampaign } = useGetCampaignsByCreator(creatorWallet)
+  const router = useRouter();
+  const [isCampaignFoundAfterFETrackerId, setIsCampaignFoundAfterFETrackerId] = useState(false)
+
+  const { mutateAsync } = useSaveCampaignMetadata()
+
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
+
+    if (countAfterTransHashReceived == countAfterTransHashLimit) {
+      queryClient.invalidateQueries({
+        queryKey: ["campaigns", "byCreator", creatorWallet]
+      })
+
+      const isNewCampaignFoundWithFETrackerId = creatorCampaign?.some((campaign) => {
+        console.log("Campaign FE Tracker ID:", campaign.frontendTrackerId)
+        return campaign.frontendTrackerId === activeFrontendTrackerId
+      }) ?? false
+
+      console.log("isNewCampaignFoundWithFETrackerId", isNewCampaignFoundWithFETrackerId)
+      setIsCampaignFoundAfterFETrackerId(isNewCampaignFoundWithFETrackerId)
+      if (isNewCampaignFoundWithFETrackerId && creatorWallet && activeFrontendTrackerId) {
+        console.log("Campaign found with FE Tracker ID:", activeFrontendTrackerId);
+
+        const metaDataHandler = async () => {
+          console.log("Saving metadata with active frontend tracker ID:", activeFrontendTrackerId);
+          // title: string;
+          // category: string;
+          // shortDescription: string;
+          // image: string | null; // Base64 data URI or null
+          // fullDescription: string;
+          // timeline: string;
+          // aboutYou: string;
+          // fundingGoal: string; // String from form input
+          // duration: string; // String from form input
+          // frontendTrackerId: string; // Unique ID for tracking this submission
+          // walletAddress: string; /
+          await mutateAsync({
+            ...formData,
+            frontendTrackerId: activeFrontendTrackerId, // Use the active frontend tracker ID
+            walletAddress: creatorWallet, // Ensure this is the correct wallet address
+          }, {
+            onSuccess: (data) => {
+
+              timer = setTimeout(() => {
+                // route to the campaign page
+                router.push("/dashboard/");
+              }, 4000);
+              console.log("Metadata saved successfully:", data);
+              router.push("/dashboard/");
+            },
+            onError: (error) => {
+              console.error("Error saving metadata:", error);
+              alert("Failed to save metadata. Please try again.");
+            },
+            onSettled: () => {
+              // Reset the active frontend tracker ID after processing
+              console.log("Resetting active frontend tracker ID...");
+            }
+          })
+        }
+        metaDataHandler()
+
+
+      }
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+
+
+  }, [countAfterTransHashReceived,
+    countAfterTransHashLimit,
+    queryClient,
+    creatorWallet,
+    creatorCampaign,
+    activeFrontendTrackerId])
+
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -971,7 +1080,7 @@ function FundingAndReviewStep({
             <AlertDescription>{txError}</AlertDescription>
           </Alert>
         )}
-        {isSuccess && (
+        {isCampaignFoundAfterFETrackerId && (
           <Alert> {/* Ensure you have a success variant */}
             <Check className="h-4 w-4" />
             <AlertTitle>Success!</AlertTitle>
@@ -986,7 +1095,7 @@ function FundingAndReviewStep({
         <Button
           variant="outline"
           onClick={prevStep}
-          disabled={buttonState.disabled && !isSuccess}
+          disabled={buttonState.disabled && !isCampaignFoundAfterFETrackerId}
         >
           Back
         </Button>
@@ -1010,6 +1119,8 @@ function FundingAndReviewStep({
           </Button>
         </div>
       </CardFooter>
+      <div>activeFrontendTrackerId: {activeFrontendTrackerId}</div>
+
     </Card>
   );
 }

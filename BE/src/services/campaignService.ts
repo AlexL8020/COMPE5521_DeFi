@@ -8,59 +8,77 @@ import {
   CampaignDetailsResult,
 } from "../types/campaignTypes"; // Import DTOs/types
 
+
+// Define the expected request body structure from the frontend
+// src/types/campaign.ts (or a relevant types file)
+
+import { Document, Types } from 'mongoose';
+
+// Interface for MongoDB document (assuming it's based on previous schema)
+export interface ICampaignMetadata extends Document {
+  frontendTrackerId: string;
+  creatorWalletAddress: string;
+  title: string;
+  description: string;
+  fullDescription: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  category?: string;
+  timeline?: string;
+  aboutYou?: string;
+  fundingGoal?: number;
+  duration?: number;
+  createdAt: Date;
+  updatedAt: Date;
+  // Add any other fields from your actual schema
+}
+
+// Interface for the data structure from the "other service"
+export interface BlockchainCampaignInfo {
+  campaignId: number; // Or string, depending on source
+  creator: string;
+  goal: string; // Keep as string as per example
+  deadline: number; // Unix timestamp
+  amountRaised: string; // Keep as string as per example
+  claimed: boolean;
+  active: boolean;
+  frontendTrackerId: string;
+}
+
+// Interface for the final merged data structure
+export interface MergedCampaignData {
+  // --- Fields from MongoDB Metadata ---
+  _id: Types.ObjectId; // MongoDB document ID
+  mongoCreatorWalletAddress: string; // Renamed to avoid conflict
+  title: string;
+  description: string;
+  fullDescription: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  category?: string;
+  timeline?: string;
+  aboutYou?: string;
+  mongoFundingGoal?: number; // Renamed
+  mongoDuration?: number; // Renamed
+  metadataCreatedAt: Date;
+  metadataUpdatedAt: Date;
+
+  // --- Fields from Blockchain Service ---
+  blockchainCampaignId: number | string; // Renamed
+  blockchainCreator: string; // Renamed
+  blockchainGoal: string; // Renamed
+  deadline: number;
+  amountRaised: string;
+  claimed: boolean;
+  active: boolean;
+
+  // --- The Key ---
+  frontendTrackerId: string;
+}
+
+
 export const campaignService = {
-  /**
-   * Creates a campaign on the blockchain and stores metadata in the database.
-   */
-  // createCampaign: async (
-  //   data: CreateCampaignInput
-  // ): Promise<CampaignCreationResult> => {
-  //   // 1. Find the user associated with the creator wallet address
-  //   const user = await User.findOne({
-  //     walletAddress: data.creatorWalletAddress,
-  //   });
-  //   if (!user) {
-  //     // Throw a specific error for the controller to catch
-  //     throw new Error(
-  //       `Create Campaign - User not found for wallet address: ${data.creatorWalletAddress}`
-  //     );
-  //   }
 
-  //   // 2. Create the campaign on the blockchain
-  //   const campaignAddr = await blockchainService.createCampaign(
-  //     data.creatorWalletAddress,
-  //     String(data.goal),
-  //     data.durationInDays
-  //   );
-
-  //   if (!campaignAddr) {
-  //     throw new Error("Failed to create campaign on blockchain");
-  //   }
-
-  //   // 3. Store rich metadata in MongoDB
-  //   const newCampaignMetadata = new CampaignMetadata({
-  //     contractAddress: campaignAddr,
-  //     creatorWalletAddress: data.creatorWalletAddress,
-  //     creator: user._id,
-  //     title: data.title,
-  //     description: data.description,
-  //     imageUrl: data.imageUrl,
-  //     videoUrl: data.videoUrl,
-  //     category: data.category,
-  //   });
-
-  //   await newCampaignMetadata.save();
-
-  //   // 4. Return the combined result
-  //   return {
-  //     metadata: newCampaignMetadata.toObject(), // Convert Mongoose doc to plain object
-  //     campaignId: campaignAddr.campaignId,
-  //   };
-  // },
-
-  /**
-   * Retrieves campaign details by combining database metadata and blockchain data.
-   */
   getCampaignByContractAddress: async (
     contractAddress: string
   ): Promise<CampaignDetailsResult> => {
@@ -104,4 +122,91 @@ export const campaignService = {
         : null,
     };
   },
+
+  getMergedCampaignData: async (): Promise<MergedCampaignData[]> => {
+    console.log("Starting campaign data merge process...");
+    try {
+      // --- Step 1: Fetch All Metadata from MongoDB ---
+      // Use .lean() for performance if you only need plain JS objects
+      // Select only necessary fields if possible
+      const mongoMetadataList = await CampaignMetadata.find(
+        {}, // No filter, get all
+        // Optional: Select specific fields for efficiency
+        // 'frontendTrackerId creatorWalletAddress title description fullDescription imageUrl videoUrl category timeline aboutYou fundingGoal duration createdAt updatedAt'
+      ).lean<ICampaignMetadata[]>(); // Use lean for plain objects
+      console.log(`Fetched ${mongoMetadataList.length} metadata documents from MongoDB.`);
+
+      // --- Step 2: Fetch Data from the Other Service ---
+      const blockchainCampaignList = await blockchainService.getAllCampaigns();
+      if (!blockchainCampaignList) {
+        throw new Error("Failed to fetch campaign data from the external service.");
+
+      }
+
+      console.log(`Fetched ${blockchainCampaignList?.length} campaign info records from external service.`);
+
+      // --- Step 3: Prepare Blockchain Data for Efficient Lookup ---
+      // Create a Map where key is frontendTrackerId and value is the BlockchainCampaignInfo object
+      const blockchainDataMap = new Map<string, BlockchainCampaignInfo>();
+      for (const campaign of blockchainCampaignList) {
+        if (campaign.frontendTrackerId) { // Ensure tracker ID exists
+          blockchainDataMap.set(campaign.frontendTrackerId, campaign);
+        }
+      }
+      console.log(`Created lookup map with ${blockchainDataMap.size} unique tracker IDs from external service.`);
+
+      // --- Step 4: Iterate Through MongoDB Data and Merge ---
+      const mergedList: MergedCampaignData[] = [];
+      for (const metadata of mongoMetadataList) {
+        // Find corresponding blockchain data using the map
+        const blockchainData = blockchainDataMap.get(metadata.frontendTrackerId);
+
+        // **If found (match exists), then merge**
+        if (blockchainData) {
+          const mergedData: MergedCampaignData = {
+            // --- Fields from MongoDB Metadata ---
+            _id: metadata._id as any, // Get the MongoDB ObjectId
+            mongoCreatorWalletAddress: metadata.creatorWalletAddress,
+            title: metadata.title,
+            description: metadata.description,
+            fullDescription: metadata.fullDescription,
+            imageUrl: metadata.imageUrl,
+            videoUrl: metadata.videoUrl,
+            category: metadata.category,
+            timeline: metadata.timeline,
+            aboutYou: metadata.aboutYou,
+            mongoFundingGoal: metadata.fundingGoal,
+            mongoDuration: metadata.duration,
+            metadataCreatedAt: metadata.createdAt,
+            metadataUpdatedAt: metadata.updatedAt,
+
+            // --- Fields from Blockchain Service ---
+            blockchainCampaignId: blockchainData.campaignId,
+            blockchainCreator: blockchainData.creator,
+            blockchainGoal: blockchainData.goal,
+            deadline: blockchainData.deadline,
+            amountRaised: blockchainData.amountRaised,
+            claimed: blockchainData.claimed,
+            active: blockchainData.active,
+
+            // --- The Key ---
+            frontendTrackerId: metadata.frontendTrackerId, // or blockchainData.frontendTrackerId
+          };
+          mergedList.push(mergedData);
+        } else {
+          // **If not found, neglect this metadata entry**
+          console.log(`Skipping merge for MongoDB entry with trackerId ${metadata.frontendTrackerId} (not found in external service data).`);
+        }
+      }
+
+      console.log(`Merge complete. Resulting list contains ${mergedList.length} merged campaign records.`);
+      return mergedList;
+
+    } catch (error) {
+      console.error("Error during campaign data merge process:", error);
+      // Re-throw the error to be handled by the caller (e.g., an API route handler)
+      throw new Error(`Failed to get merged campaign data: ${(error as Error).message}`);
+    }
+  }
+
 };

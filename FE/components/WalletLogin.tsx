@@ -5,6 +5,7 @@ import { useWalletAuth } from "../hooks/useWalletAuth";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { useCheckUserExists } from "@/query/useForUser";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function WalletLogin() {
   const { connectWallet, disconnectWallet, loading } = useWalletAuth();
@@ -18,9 +19,16 @@ export default function WalletLogin() {
     isError: isUserCheckError,
     error: userCheckError,
   } = useCheckUserExists(walletAddress);
+  const queryClient = useQueryClient();
 
   // Redirect to registration page if wallet is connected but user doesn't exist
   useEffect(() => {
+    if (walletAddress) {
+      queryClient.invalidateQueries({
+        queryKey: ["user", walletAddress]
+      }); // Invalidate user data to refresh it
+
+    }
     if (
       walletAddress &&
       !chkRes?.isExist &&

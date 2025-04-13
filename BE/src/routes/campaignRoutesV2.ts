@@ -4,7 +4,7 @@ import CampaignMetadata from "../models/CampaignMetadata";
 import User from "../models/User";
 import { blockchainService } from "../services/blockchainService";
 import { getOnChainCampaignByCreator, getOnChainCampaignsExceptCreator } from "../controllers/blockchainController";
-
+import { campaignController } from "../controllers/campaignController";
 const router = express.Router();
 
 // Create a new campaign
@@ -109,4 +109,11 @@ router.get("/by-creator/:creatorAddress", getOnChainCampaignByCreator)
 
 // Get all campaigns excluding a specific creator
 router.get("/allExcept/:excludeAddress", getOnChainCampaignsExceptCreator)
+
+// Post to save metadato of a campaign
+router.post("/saveMetadata", campaignController.saveCampaignMetadata);
+
+router.get("/metadata/merged/all", campaignController.getMergedCampaigns)
 export default router;
+
+

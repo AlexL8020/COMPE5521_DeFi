@@ -56,7 +56,7 @@ export function FundingForm() {
         />
       </div>
 
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label htmlFor="message">Message (Optional)</Label>
         <Textarea
           id="message"
@@ -65,7 +65,7 @@ export function FundingForm() {
           placeholder="Add a message of support to the campaign creator"
           className="resize-none"
         />
-      </div>
+      </div> */}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Processing..." : "Fund This Campaign"}

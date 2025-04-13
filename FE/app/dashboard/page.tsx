@@ -25,7 +25,8 @@ import CampaignsTab from "./CampaignsTab";
 import ContributionsTab from "./ContributionsTab";
 import ProfileTab from "./ProfileTab";
 import WalletTab from "./WalletTab";
-import { useGetCampaignsByCreator } from "@/query/useForCampaigns";
+import { useGetCampaignsByCreator, useGetMergedCampaigns } from "@/query/useForCampaigns";
+import { MergedCampaignData } from "../../../BE/src/services/campaignService";
 
 export default function DashboardPage() {
   const { connectWallet, disconnectWallet, loading } = useWalletAuth();
@@ -39,7 +40,25 @@ export default function DashboardPage() {
 
   const { data: walletBalance } = useWalletBalance(userWalletAddress);
   const { data: campaignsByCreator } = useGetCampaignsByCreator(userWalletAddress)
+  const { data: campaignsWithMeta, isLoading } = useGetMergedCampaigns()
 
+  const mergedInfo = campaignsByCreator?.map((campaignByC) => {
+
+
+    const matchingCampaign = campaignsWithMeta?.find(
+      (campaign) => campaign.frontendTrackerId === campaignByC.frontendTrackerId
+    );
+
+    if (matchingCampaign) {
+      return {
+        ...campaignByC,
+        ...matchingCampaign,
+      };
+    }
+    return campaignByC;
+
+
+  }) satisfies Partial<MergedCampaignData>[] | undefined;
 
   return (
     <div className="container py-8">
@@ -65,7 +84,7 @@ export default function DashboardPage() {
 
           <TabsContent value="campaigns">
             <CampaignsTab
-              campaignInfo={campaignsByCreator}
+              campaignInfo={mergedInfo}
             />
           </TabsContent>
 

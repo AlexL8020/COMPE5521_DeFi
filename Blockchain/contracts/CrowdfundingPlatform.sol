@@ -16,6 +16,7 @@ contract CrowdfundingPlatform is Ownable {
         bool active;
         mapping(address => uint256) contributions;
         address[] backers;
+        string frontendTrackerId;
     }
 
     mapping(uint256 => Campaign) public campaigns;
@@ -25,7 +26,8 @@ contract CrowdfundingPlatform is Ownable {
         uint256 campaignId,
         address creator,
         uint256 goal,
-        uint256 deadline
+        uint256 deadline,
+        string frontendTrackerId // Emit the tracker ID
     );
     event ContributionMade(
         uint256 campaignId,
@@ -50,10 +52,13 @@ contract CrowdfundingPlatform is Ownable {
 
     function createCampaign(
         uint256 _goal,
-        uint256 _durationInDays
+        uint256 _durationInDays,
+        string calldata _frontendTrackerId // Accept the tracker ID
     ) external returns (uint256) {
         require(_goal > 0, "Goal must be greater than 0");
         require(_durationInDays > 0, "Duration must be greater than 0");
+        // Basic check for tracker ID, could be more robust
+        require(bytes(_frontendTrackerId).length > 0, "Tracker ID required");
 
         uint256 campaignId = campaignCount;
         Campaign storage newCampaign = campaigns[campaignId];
@@ -62,14 +67,15 @@ contract CrowdfundingPlatform is Ownable {
         newCampaign.goal = _goal;
         newCampaign.deadline = block.timestamp + (_durationInDays * 1 days);
         newCampaign.active = true;
-
+        newCampaign.frontendTrackerId = _frontendTrackerId;
         campaignCount++;
 
         emit CampaignCreated(
             campaignId,
             msg.sender,
             _goal,
-            newCampaign.deadline
+            newCampaign.deadline,
+            _frontendTrackerId
         );
 
         return campaignId;
@@ -174,7 +180,8 @@ contract CrowdfundingPlatform is Ownable {
             uint256 deadline,
             uint256 amountRaised,
             bool claimed,
-            bool active
+            bool active,
+            string memory frontendTrackerId
         )
     {
         Campaign storage campaign = campaigns[_campaignId];
@@ -184,7 +191,8 @@ contract CrowdfundingPlatform is Ownable {
             campaign.deadline,
             campaign.amountRaised,
             campaign.claimed,
-            campaign.active
+            campaign.active,
+            campaign.frontendTrackerId // Return the tracker ID
         );
     }
 

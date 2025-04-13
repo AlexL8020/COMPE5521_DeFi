@@ -186,6 +186,8 @@ export const blockchainService = {
     try {
       const details: RawCampaignDetails =
         await crowdfundingPlatform.getCampaignDetails(campaignId);
+
+      console.log("details: ", details)
       return {
         creator: details[0],
         goal: ethers.formatUnits(details[1], 18),
@@ -193,6 +195,7 @@ export const blockchainService = {
         amountRaised: ethers.formatUnits(details[3], 18),
         claimed: details[4],
         active: details[5],
+        frontendTrackerId: details[6], // This is a placeholder. Adjust based on your actual implementation.
       };
     } catch (error) {
       if ((error as any)?.message?.includes("invalid campaign id")) {
@@ -368,8 +371,55 @@ export const blockchainService = {
       console.error(`Error fetching campaigns excluding creator ${excludeAddress}:`, error);
       return null; // Indicate failure
     }
+  },
+  getAllCampaigns: async (): Promise<CampaignInfo[] | null> => {
+    try {
+      console.log("API request for all campaigns");
+
+      // Get total campaign count
+      const countBigInt = await crowdfundingPlatform.campaignCount();
+      const count = Number(countBigInt);
+      console.log(`Total campaigns on platform: ${count}`);
+
+      if (count === 0) {
+        return []; // No campaigns exist yet
+      }
+
+      // Create an array of campaign IDs to fetch
+      const campaignIds = Array.from({ length: count }, (_, i) => i);
+
+      // Fetch details for all campaigns concurrently
+      const campaignDetailPromises = campaignIds.map(id =>
+        blockchainService.getCampaignDetails(id)
+          .then(details => ({ id, details }))
+          .catch(err => {
+            console.error(`Error fetching details for campaign ID ${id}:`, err);
+            return { id, details: null };
+          })
+      );
+
+      const campaignResults = await Promise.all(campaignDetailPromises);
+
+      // Filter out any null results
+      const allCampaigns: CampaignInfo[] = [];
+
+      for (const result of campaignResults) {
+        if (result.details) {
+          allCampaigns.push({
+            campaignId: result.id,
+            ...result.details,
+          });
+        }
+      }
+
+      console.log(`Found ${allCampaigns.length} total campaigns`);
+      return allCampaigns;
+
+    } catch (error) {
+      console.error("Error fetching all campaigns:", error);
+      return null; // Indicate failure
+    }
   }
-  // setupEventListeners function has been removed
 };
 
 // Optional: Log initialization status

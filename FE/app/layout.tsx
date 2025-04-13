@@ -5,13 +5,16 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import { WalletProvider } from "../providers/WalletProvider";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GraduationCap } from "lucide-react";
 import WalletLogin from "@/components/WalletLogin";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import { useCheckUserExists } from "@/query/useForUser";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,6 +30,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
@@ -82,7 +88,6 @@ export default function RootLayout({
                   </div>
                 </div>
               </header>
-
               {children}
             </WalletProvider>
           </SessionProvider>
@@ -91,3 +96,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -14,37 +14,10 @@ import { Search, Filter } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useState, useEffect } from 'react';
 import { API_CONFIG } from '../API'; // Your API config file
+import { useGetMergedCampaigns } from "@/query/useForCampaigns";
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns] = useState([]); // State to hold fetched campaigns
-    const [loading, setLoading] = useState(true); // Optional: Loading state
-  
-    useEffect(() => {
-      const fetchCampaigns = async () => {
-        try {
-          const response = await fetch(`${API_CONFIG.BASE_URL}/api/v1/campaign`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setCampaigns(data.slice(0, 9)); // Limit to 9 campaigns for display
-            setLoading(false);
-          } else {
-            console.error('Failed to fetch campaigns:', response.status);
-          }
-        } catch (error) {
-          console.error('Error fetching campaigns:', error);
-          setLoading(false);
-        }
-      };
-  
-      fetchCampaigns();
-    }, []); // Empty dependency array to run once on mount
-
-
+  const { data: campaigns, isLoading } = useGetMergedCampaigns()
 
 
   return (
@@ -82,135 +55,70 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      {/* <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.from({ length: 9 }).map((_, i) => (
-          <Link href={`/campaigns/${i + 1}`} key={i} className="group">
-            <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
-              <div className="aspect-video relative bg-muted">
-                <img
-                  src={`/placeholder.svg?height=225&width=400&text=Campaign+${
-                    i + 1
-                  }`}
-                  alt={`Campaign ${i + 1}`}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="p-5">
-                <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
-                  {i % 3 === 0
-                    ? `Computer Science Degree ${i + 1}`
-                    : i % 3 === 1
-                    ? `Research Project ${i + 1}`
-                    : `Student Startup ${i + 1}`}
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4">
-                  {i % 3 === 0
-                    ? "Help me complete my degree and build open-source tools."
-                    : i % 3 === 1
-                    ? "Supporting innovative research in an emerging field."
-                    : "Building a platform to solve real-world problems."}
-                </p>
-                <div className="space-y-2">
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-primary h-2 rounded-full"
-                      style={{
-                        width: `${Math.floor(Math.random() * 80 + 20)}%`,
-                      }}
-                    ></div>
+
+
+
+
+      {isLoading ? (
+        <p className="text-center">Loading campaigns...</p>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {campaigns?.map((campaign) => {
+            // Convert progress and fundingGoal to numbers
+            const progress = isNaN(Number(campaign.amountRaised)) ? 0 : Number(campaign.amountRaised);
+            const fundingGoal = isNaN(Number(campaign.blockchainGoal)) ? 1 : Number(campaign.blockchainGoal);
+
+            // Calculate progress percentage
+            const progressPercentage = fundingGoal > 0
+              ? Math.round((progress / fundingGoal) * 100)
+              : 0; // Cap at 100% and handle division by zero
+
+            return (
+              <
+                Link href={`/campaigns/${campaign._id}`} key={campaign._id as any} className="group">
+                <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
+                  <div className="aspect-video relative bg-muted">
+                    <img
+                      src={campaign.imageUrl} // Base64 string from MongoDB
+                      alt={campaign.title}
+                      className="object-cover w-full h-full"
+                    />
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">
-                      {(Math.random() * 5).toFixed(2)} ETH raised
-                    </span>
-                    <span className="text-muted-foreground">
-                      {Math.floor(Math.random() * 80 + 20)}% of 5 ETH
-                    </span>
+                  <div className="p-5">
+                    <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
+                      {campaign.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mb-4">
+                      {campaign.description}
+                    </p>
+                    <div className="space-y-2">
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full"
+                          style={{ width: `${progressPercentage}%` }} // Real progress
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="font-medium">
+                          {progress.toFixed(2)} MSC raised
+                        </span>
+                        <span className="text-muted-foreground">
+                          {progressPercentage.toFixed(0)}% of {fundingGoal} MSC
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div> */}
-
-        
-              
-              
-                {loading ? (
-                  <p className="text-center">Loading campaigns...</p>
-                ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {campaigns.map((campaign) => {
-                      // Convert progress and fundingGoal to numbers
-                      const progress = Number(campaign.progress);
-                      const fundingGoal = Number(campaign.fundingGoal);
-
-                      // Calculate progress percentage
-                      const progressPercentage = fundingGoal > 0 
-                        ? Math.round((progress / fundingGoal) * 100) 
-                        : 0; // Cap at 100% and handle division by zero
-
-                      return (
-                        <Link href={`/campaigns/${campaign._id}`} key={campaign._id} className="group">
-                          <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
-                            <div className="aspect-video relative bg-muted">
-                              <img
-                                src={campaign.image} // Base64 string from MongoDB
-                                alt={campaign.title}
-                                className="object-cover w-full h-full"
-                              />
-                            </div>
-                            <div className="p-5">
-                              <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
-                                {campaign.title}
-                              </h3>
-                              <p className="text-muted-foreground text-sm mb-4">
-                                {campaign.shortDescription}
-                              </p>
-                              <div className="space-y-2">
-                                <div className="w-full bg-muted rounded-full h-2">
-                                  <div
-                                    className="bg-primary h-2 rounded-full"
-                                    style={{ width: `${progressPercentage}%` }} // Real progress
-                                  ></div>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                  <span className="font-medium">
-                                    {progress.toFixed(2)} ETH raised
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {progressPercentage.toFixed(0)}% of {fundingGoal} ETH
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              
-           
-
-
-      <div className="flex justify-center mt-8">
-        <div className="flex gap-1">
-          <Button variant="outline" size="icon" disabled>
-            1
-          </Button>
-          <Button variant="outline" size="icon">
-            2
-          </Button>
-          <Button variant="outline" size="icon">
-            3
-          </Button>
-          <Button variant="outline" size="icon">
-            4
-          </Button>
+              </Link>
+            );
+          })}
         </div>
-      </div>
+      )}
+
+
+
+
+
     </div>
   );
 }

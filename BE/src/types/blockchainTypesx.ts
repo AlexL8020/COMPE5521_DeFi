@@ -5,7 +5,8 @@ export type RawCampaignDetails = [
   bigint, // deadline
   bigint, // amountRaised
   boolean, // claimed
-  boolean // active line 23
+  boolean, // active line 23
+  string // frontendTrackerId (not in the original contract, but added for frontend tracking)
 ];
 // based on CrowdfundingPlatform.sol
 // function getCampaignDetails(
@@ -32,4 +33,5 @@ export type CampaignDetails = {
   amountRaised: string;
   claimed: boolean;
   active: boolean;
+  frontendTrackerId: string; // This is the ID used in the frontend to track the campaign
 };
