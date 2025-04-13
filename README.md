@@ -1,6 +1,8 @@
 # Setup Instructions
 
-This document outlines the steps to set up the blockchain, backend server, and related components for the project.
+This document outlines the steps to set up the blockchain, backend server, and related components for the project. 
+
+# Recommended to use Edge browser 
 
 ## 1. Blockchain Setup
 

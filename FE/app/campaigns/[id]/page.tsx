@@ -39,10 +39,11 @@ export default function CampaignPage({ params }: { params: { id: string } }) {
   // Calculate progress percentage
   const goalAmount = parseFloat(targetCampaign?.blockchainGoal || "1") ?? 1
   const raisedAmount = parseFloat(targetCampaign?.amountRaised || "0");
-
-  const progress = raisedAmount / goalAmount * 100
+  console.log("========= goalAmount:", goalAmount)
+  console.log("========= raisedAmount:", raisedAmount)
+  const progress = (raisedAmount / goalAmount) * 100
   const fundingGoal = goalAmount
-  const percentFunded = fundingGoal > 0 ? Math.min((progress / fundingGoal) * 100, 100) : 0;
+  const percentFunded = fundingGoal > 0 ? Math.min(progress, 100) : 0;
   const daysLeft = Math.floor((new Date((targetCampaign?.deadline || 0) * 1000).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
 
