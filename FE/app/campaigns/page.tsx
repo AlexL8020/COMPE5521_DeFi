@@ -75,7 +75,7 @@ export default function CampaignsPage() {
 
             return (
               <
-                Link href={`/campaigns/${campaign._id}`} key={campaign._id as any} className="group">
+                Link href={`/campaigns/${campaign.frontendTrackerId}`} key={campaign._id as any} className="group">
                 <div className="rounded-lg border bg-card overflow-hidden transition-all hover:shadow-md">
                   <div className="aspect-video relative bg-muted">
                     <img
