@@ -12,51 +12,51 @@ export const campaignService = {
   /**
    * Creates a campaign on the blockchain and stores metadata in the database.
    */
-  createCampaign: async (
-    data: CreateCampaignInput
-  ): Promise<CampaignCreationResult> => {
-    // 1. Find the user associated with the creator wallet address
-    const user = await User.findOne({
-      walletAddress: data.creatorWalletAddress,
-    });
-    if (!user) {
-      // Throw a specific error for the controller to catch
-      throw new Error(
-        `Create Campaign - User not found for wallet address: ${data.creatorWalletAddress}`
-      );
-    }
+  // createCampaign: async (
+  //   data: CreateCampaignInput
+  // ): Promise<CampaignCreationResult> => {
+  //   // 1. Find the user associated with the creator wallet address
+  //   const user = await User.findOne({
+  //     walletAddress: data.creatorWalletAddress,
+  //   });
+  //   if (!user) {
+  //     // Throw a specific error for the controller to catch
+  //     throw new Error(
+  //       `Create Campaign - User not found for wallet address: ${data.creatorWalletAddress}`
+  //     );
+  //   }
 
-    // 2. Create the campaign on the blockchain
-    const campaignAddr = await blockchainService.createCampaign(
-      data.creatorWalletAddress,
-      String(data.goal),
-      data.durationInDays
-    );
+  //   // 2. Create the campaign on the blockchain
+  //   const campaignAddr = await blockchainService.createCampaign(
+  //     data.creatorWalletAddress,
+  //     String(data.goal),
+  //     data.durationInDays
+  //   );
 
-    if (!campaignAddr) {
-      throw new Error("Failed to create campaign on blockchain");
-    }
+  //   if (!campaignAddr) {
+  //     throw new Error("Failed to create campaign on blockchain");
+  //   }
 
-    // 3. Store rich metadata in MongoDB
-    const newCampaignMetadata = new CampaignMetadata({
-      contractAddress: campaignAddr,
-      creatorWalletAddress: data.creatorWalletAddress,
-      creator: user._id,
-      title: data.title,
-      description: data.description,
-      imageUrl: data.imageUrl,
-      videoUrl: data.videoUrl,
-      category: data.category,
-    });
+  //   // 3. Store rich metadata in MongoDB
+  //   const newCampaignMetadata = new CampaignMetadata({
+  //     contractAddress: campaignAddr,
+  //     creatorWalletAddress: data.creatorWalletAddress,
+  //     creator: user._id,
+  //     title: data.title,
+  //     description: data.description,
+  //     imageUrl: data.imageUrl,
+  //     videoUrl: data.videoUrl,
+  //     category: data.category,
+  //   });
 
-    await newCampaignMetadata.save();
+  //   await newCampaignMetadata.save();
 
-    // 4. Return the combined result
-    return {
-      metadata: newCampaignMetadata.toObject(), // Convert Mongoose doc to plain object
-      campaignId: campaignAddr.campaignId,
-    };
-  },
+  //   // 4. Return the combined result
+  //   return {
+  //     metadata: newCampaignMetadata.toObject(), // Convert Mongoose doc to plain object
+  //     campaignId: campaignAddr.campaignId,
+  //   };
+  // },
 
   /**
    * Retrieves campaign details by combining database metadata and blockchain data.
@@ -95,12 +95,12 @@ export const campaignService = {
       metadata: campaignMetadata.toObject(), // Convert Mongoose doc to plain object
       blockchain: blockchainData
         ? {
-            amountRaised: blockchainData.amountRaised.toString(), // Ensure consistent types
-            goal: blockchainData.goal.toString(),
-            deadline: blockchainData.deadline,
-            active: blockchainData.active,
-            claimed: blockchainData.claimed,
-          }
+          amountRaised: blockchainData.amountRaised.toString(), // Ensure consistent types
+          goal: blockchainData.goal.toString(),
+          deadline: blockchainData.deadline,
+          active: blockchainData.active,
+          claimed: blockchainData.claimed,
+        }
         : null,
     };
   },

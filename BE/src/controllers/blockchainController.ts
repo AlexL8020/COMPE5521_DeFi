@@ -51,36 +51,6 @@ export const getUserBalance = async (req: Request, res: Response<{
     }
 };
 
-export const createCampaign = async (req: Request, res: Response) => {
-    try {
-        const { creatorWalletAddress, goal, durationInDays } = req.body;
-
-        if (!creatorWalletAddress || !goal || !durationInDays) {
-            res.status(400).json({
-                message: "Creator wallet address, goal, and duration are required",
-            });
-        }
-
-        const result = await blockchainService.createCampaign(
-            creatorWalletAddress,
-            goal,
-            durationInDays
-        );
-
-        if (result) {
-            res.status(201).json({
-                message: "Campaign created on blockchain",
-                campaignId: result,
-                contractAddress: result,
-            });
-        } else {
-            res.status(500).json({ message: "Failed to create campaign" });
-        }
-    } catch (error) {
-        console.error("Error creating campaign:", error);
-        res.status(500).json({ message: "Server error" });
-    }
-};
 
 export const getCampaignDetails = async (req: Request, res: Response) => {
     try {
@@ -159,6 +129,33 @@ export const getOnChainCampaignByCreator = async (req: Request, res: Response) =
 
     } catch (error) {
         console.error(`Error in /campaigns/by-creator/${creatorAddress} route:`, error);
+        res.status(500).json({ message: "Server error fetching campaigns." });
+    }
+}
+
+
+export const getOnChainCampaignsExceptCreator = async (req: Request, res: Response) => {
+    const { excludeAddress } = req.params;
+
+    // Basic validation
+    if (!ethers.isAddress(excludeAddress)) {
+        res.status(400).json({ message: "Invalid wallet address format." });
+    }
+
+    try {
+        console.log(`API request for all campaigns EXCLUDING target addr: ${excludeAddress}`);
+        const campaigns: CampaignInfo[] | null = await blockchainService.getCampaignsExceptCreator(excludeAddress);
+
+        if (campaigns === null) {
+            // Error occurred within the service
+            res.status(500).json({ message: "Failed to fetch campaigns from blockchain." });
+        }
+
+        // Success - return the found campaigns (could be an empty array)
+        res.status(200).json(campaigns);
+
+    } catch (error) {
+        console.error(`Error in /campaigns/exclude-creator/${excludeAddress} route:`, error);
         res.status(500).json({ message: "Server error fetching campaigns." });
     }
 }

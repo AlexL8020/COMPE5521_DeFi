@@ -122,62 +122,62 @@ export const blockchainService = {
     }
   },
 
-  // Function to create a new campaign (using admin wallet)
-  createCampaign: async (
-    creatorWalletAddress: string, // Currently unused for signing
-    goal: string,
-    durationInDays: number
-  ): Promise<CampaignCreationResult | null> => {
-    if (!crowdfundingPlatform.runner) {
-      console.error(
-        "Admin wallet not connected to CrowdfundingPlatform contract."
-      );
-      return null;
-    }
-    try {
-      const goalInWei = ethers.parseUnits(goal, 18);
-      console.log(
-        `Admin ${adminWallet.address} creating campaign (Goal: ${goal}, Duration: ${durationInDays} days)`
-      );
+  // // Function to create a new campaign (using admin wallet)
+  // createCampaign: async (
+  //   creatorWalletAddress: string, // Currently unused for signing
+  //   goal: string,
+  //   durationInDays: number
+  // ): Promise<CampaignCreationResult | null> => {
+  //   if (!crowdfundingPlatform.runner) {
+  //     console.error(
+  //       "Admin wallet not connected to CrowdfundingPlatform contract."
+  //     );
+  //     return null;
+  //   }
+  //   try {
+  //     const goalInWei = ethers.parseUnits(goal, 18);
+  //     console.log(
+  //       `Admin ${adminWallet.address} creating campaign (Goal: ${goal}, Duration: ${durationInDays} days)`
+  //     );
 
-      const tx: ContractTransactionResponse =
-        await crowdfundingPlatform.createCampaign(goalInWei, durationInDays);
-      const receipt = await tx.wait();
+  //     const tx: ContractTransactionResponse =
+  //       await crowdfundingPlatform.createCampaign(goalInWei, durationInDays);
+  //     const receipt = await tx.wait();
 
-      let campaignId: number | null = null;
-      if (receipt?.logs) {
-        const iFace = new ethers.Interface(crowdfundingPlatformAbi);
-        for (const log of receipt.logs as Log[]) {
-          if (log.topics && log.data) {
-            try {
-              const parsedLog = iFace.parseLog(log);
-              if (parsedLog && parsedLog.name === "CampaignCreated") {
-                campaignId = Number(parsedLog.args[0]);
-                console.log(
-                  `Campaign created successfully. Campaign ID: ${campaignId} (Tx: ${tx.hash})`
-                );
-                break;
-              }
-            } catch (parseError) {
-              // Ignore logs that don't match the ABI
-            }
-          }
-        }
-      }
+  //     let campaignId: number | null = null;
+  //     if (receipt?.logs) {
+  //       const iFace = new ethers.Interface(crowdfundingPlatformAbi);
+  //       for (const log of receipt.logs as Log[]) {
+  //         if (log.topics && log.data) {
+  //           try {
+  //             const parsedLog = iFace.parseLog(log);
+  //             if (parsedLog && parsedLog.name === "CampaignCreated") {
+  //               campaignId = Number(parsedLog.args[0]);
+  //               console.log(
+  //                 `Campaign created successfully. Campaign ID: ${campaignId} (Tx: ${tx.hash})`
+  //               );
+  //               break;
+  //             }
+  //           } catch (parseError) {
+  //             // Ignore logs that don't match the ABI
+  //           }
+  //         }
+  //       }
+  //     }
 
-      if (campaignId !== null) {
-        return { campaignId };
-      } else {
-        console.error(
-          "CampaignCreated event not found in transaction receipt."
-        );
-        return null;
-      }
-    } catch (error) {
-      console.error("Error creating campaign:", error);
-      return null;
-    }
-  },
+  //     if (campaignId !== null) {
+  //       return { campaignId };
+  //     } else {
+  //       console.error(
+  //         "CampaignCreated event not found in transaction receipt."
+  //       );
+  //       return null;
+  //     }
+  //   } catch (error) {
+  //     console.error("Error creating campaign:", error);
+  //     return null;
+  //   }
+  // },
 
   // Function to get campaign details
   getCampaignDetails: async (
@@ -318,6 +318,57 @@ export const blockchainService = {
     }
   },
 
+  getCampaignsExceptCreator: async (
+    excludeAddress: string
+  ): Promise<CampaignInfo[] | null> => {
+    try {
+      console.log(`API request for campaigns excluding creator: ${excludeAddress}`);
+
+      // Get total campaign count (reuse existing logic from blockchainService)
+      const countBigInt = await crowdfundingPlatform.campaignCount();
+      const count = Number(countBigInt);
+      console.log(`Total campaigns on platform: ${count}`);
+
+      if (count === 0) {
+        return [] // No campaigns exist yet
+      }
+
+      // Create an array of campaign IDs to fetch
+      const campaignIds = Array.from({ length: count }, (_, i) => i);
+
+      // Fetch details for all campaigns concurrently
+      const campaignDetailPromises = campaignIds.map(id =>
+        blockchainService.getCampaignDetails(id)
+          .then(details => ({ id, details }))
+          .catch(err => {
+            console.error(`Error fetching details for campaign ID ${id}:`, err);
+            return { id, details: null };
+          })
+      );
+
+      const campaignResults = await Promise.all(campaignDetailPromises);
+
+      // Filter to exclude campaigns from the specific creator
+      const normalizedExcludeAddress = excludeAddress.toLowerCase();
+      const filteredCampaigns: CampaignInfo[] = [];
+
+      for (const result of campaignResults) {
+        if (result.details && result.details.creator.toLowerCase() !== normalizedExcludeAddress) {
+          filteredCampaigns.push({
+            campaignId: result.id,
+            ...result.details,
+          });
+        }
+      }
+
+      console.log(`Found ${filteredCampaigns.length} campaigns excluding creator ${excludeAddress}`);
+
+      return filteredCampaigns;
+    } catch (error) {
+      console.error(`Error fetching campaigns excluding creator ${excludeAddress}:`, error);
+      return null; // Indicate failure
+    }
+  }
   // setupEventListeners function has been removed
 };
 

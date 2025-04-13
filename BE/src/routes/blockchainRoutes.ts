@@ -2,7 +2,7 @@ import express from "express";
 import {
   mintTokens,
   getUserBalance,
-  createCampaign,
+  // createCampaign,
   getCampaignDetails,
   contributeToCampaign,
 } from "../controllers/blockchainController";
@@ -16,7 +16,7 @@ router.post("/mint-tokens", mintTokens);
 router.get("/balance/:walletAddress", getUserBalance);
 
 // Create a campaign on blockchain
-router.post("/campaigns", createCampaign);
+// router.post("/campaigns", createCampaign);
 
 // Get campaign details from blockchain
 router.get("/campaigns/:campaignId", getCampaignDetails);

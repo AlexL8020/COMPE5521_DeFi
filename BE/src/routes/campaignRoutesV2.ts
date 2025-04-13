@@ -3,68 +3,70 @@ import express, { Request, Response } from "express";
 import CampaignMetadata from "../models/CampaignMetadata";
 import User from "../models/User";
 import { blockchainService } from "../services/blockchainService";
-import { getOnChainCampaignByCreator } from "../controllers/blockchainController";
+import { getOnChainCampaignByCreator, getOnChainCampaignsExceptCreator } from "../controllers/blockchainController";
 
 const router = express.Router();
 
 // Create a new campaign
 router.post("/", async (req: Request, res: Response) => {
-  try {
-    const {
-      title,
-      description,
-      creatorWalletAddress,
-      goal,
-      durationInDays,
-      imageUrl,
-      videoUrl,
-      category,
-    } = req.body;
+  // try {
+  //   const {
+  //     title,
+  //     description,
+  //     creatorWalletAddress,
+  //     goal,
+  //     durationInDays,
+  //     imageUrl,
+  //     videoUrl,
+  //     category,
+  //   } = req.body;
 
-    // Find the user
-    const user = await User.findOne({ walletAddress: creatorWalletAddress });
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-    }
+  //   // Find the user
+  //   const user = await User.findOne({ walletAddress: creatorWalletAddress });
+  //   if (!user) {
+  //     res.status(404).json({ message: "User not found" });
+  //   }
 
-    // Create campaign on blockchain
-    const campaignResult = await blockchainService.createCampaign(
-      creatorWalletAddress,
-      goal,
-      durationInDays
-    );
+  //   // Create campaign on blockchain
+  //   const campaignResult = await blockchainService.createCampaign(
+  //     creatorWalletAddress,
+  //     goal,
+  //     durationInDays
+  //   );
 
-    if (!campaignResult) {
-      res
-        .status(400)
-        .json({ message: "Failed to create campaign on blockchain" });
-    }
+  //   if (!campaignResult) {
+  //     res
+  //       .status(400)
+  //       .json({ message: "Failed to create campaign on blockchain" });
+  //   }
 
-    // Create campaign metadata in database
-    const newCampaignMetadata = new CampaignMetadata({
-      contractAddress: campaignResult,
-      creatorWalletAddress,
-      creator: user?._id,
-      title,
-      description,
-      imageUrl,
-      videoUrl,
-      category,
-    });
+  //   // Create campaign metadata in database
+  //   const newCampaignMetadata = new CampaignMetadata({
+  //     contractAddress: campaignResult,
+  //     creatorWalletAddress,
+  //     creator: user?._id,
+  //     title,
+  //     description,
+  //     imageUrl,
+  //     videoUrl,
+  //     category,
+  //   });
 
-    await newCampaignMetadata.save();
+  //   await newCampaignMetadata.save();
 
-    res.status(201).json({
-      message: "Campaign created successfully",
-      campaign: {
-        ...newCampaignMetadata.toObject(),
-        campaignId: campaignResult,
-      },
-    });
-  } catch (error) {
-    console.error("Error creating campaign:", error);
-    res.status(500).json({ message: "Server error" });
-  }
+  //   res.status(201).json({
+  //     message: "Campaign created successfully",
+  //     campaign: {
+  //       ...newCampaignMetadata.toObject(),
+  //       campaignId: campaignResult,
+  //     },
+  //   });
+  // } catch (error) {
+  //   console.error("Error creating campaign:", error);
+  //   res.status(500).json({ message: "Server error" });
+  // }
+  res.status(500).json({ message: "Server error ----" });
+
 });
 
 // Get campaign by contract address
@@ -104,4 +106,7 @@ router.get("/:contractAddress", async (req: Request, res: Response) => {
 
 // Other campaign routes...
 router.get("/by-creator/:creatorAddress", getOnChainCampaignByCreator)
+
+// Get all campaigns excluding a specific creator
+router.get("/allExcept/:excludeAddress", getOnChainCampaignsExceptCreator)
 export default router;
