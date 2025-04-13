@@ -25,6 +25,10 @@ interface CreateNewCampaignBody {
   progress: string;
 }
 
+interface UpdateCampaignBody {
+  progress: number; // Body for PATCH request to update progress
+}
+
 export const campaigndata = async (
   // Use the specific request body type
   req: Request<{}, {}, CreateNewCampaignBody>,
@@ -117,5 +121,45 @@ export const getCampaignByID = async (
     console.error("Error fetching user by ID:", error);
     res.status(500).json({ message: "Failed to fetch user" });
     // Or: next(error);
+  }
+};
+
+export const updateCampaignProgress = async (
+  req: Request<{ id: string }, {}, UpdateCampaignBody>,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const campaignId = req.params.id;
+    const { progress } = req.body;
+
+    // Validate campaign ID
+    if (!mongoose.Types.ObjectId.isValid(campaignId)) {
+      res.status(400).json({ message: "Invalid campaign ID format" });
+      return;
+    }
+
+    // Validate progress
+    if (typeof progress !== "number" || progress < 0) {
+      res.status(400).json({ message: "Progress must be a non-negative number" });
+      return;
+    }
+
+    // Update the campaign's progress field
+    const updatedCampaign = await CampaignCreateForm.findByIdAndUpdate(
+      campaignId,
+      { progress },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedCampaign) {
+      res.status(404).json({ message: "Campaign not found" });
+      return;
+    }
+
+    res.status(200).json(updatedCampaign);
+  } catch (error) {
+    console.error("Error updating campaign progress:", error);
+    res.status(500).json({ message: "Failed to update campaign progress" });
   }
 };
