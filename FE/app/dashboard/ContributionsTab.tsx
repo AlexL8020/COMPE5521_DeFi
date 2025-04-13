@@ -29,7 +29,7 @@ export default function ContributionsTab() {
                                     <div>
                                         <div className="text-sm text-muted-foreground">Your contribution</div>
                                         <div className="font-semibold">
-                                            {id === 3 ? "0.5 ETH" : id === 4 ? "0.25 ETH" : "0.75 ETH"}
+                                            {id === 3 ? "0.5 MSC" : id === 4 ? "0.25 MSC" : "0.75 MSC"}
                                         </div>
                                     </div>
                                     <Badge variant="outline">Active</Badge>
@@ -37,10 +37,10 @@ export default function ContributionsTab() {
                                 <div>
                                     <div className="flex justify-between mb-1 text-sm">
                                         <span className="font-medium">
-                                            {id === 3 ? "2.25 ETH" : id === 4 ? "4.5 ETH" : "3.2 ETH"} raised
+                                            {id === 3 ? "2.25 MSC" : id === 4 ? "4.5 MSC" : "3.2 MSC"} raised
                                         </span>
                                         <span className="text-muted-foreground">
-                                            of {id === 3 ? "5 ETH" : id === 4 ? "6 ETH" : "4 ETH"} goal
+                                            of {id === 3 ? "5 MSC" : id === 4 ? "6 MSC" : "4 MSC"} goal
                                         </span>
                                     </div>
                                     <Progress value={id === 3 ? 45 : id === 4 ? 75 : 80} className="h-2" />

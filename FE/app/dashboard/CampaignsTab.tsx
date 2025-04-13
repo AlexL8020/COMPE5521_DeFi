@@ -89,8 +89,8 @@ export default function CampaignsTab({ campaignInfo }: { campaignInfo: Partial<M
 
 
                     <div className="flex flex-col items-center justify-center h-full">
-                        <h2 className="text-lg font-semibold">No Contributions Yet</h2>
-                        <p className="text-sm text-muted-foreground">how about viewing some campaigns, and starting your first contributions?</p>
+                        <h2 className="text-lg font-semibold">No Campaigns created Yet</h2>
+                        <p className="text-sm text-muted-foreground">how about launching your first campaign?</p>
                         <Link href="/campaigns/create" className="w-full">
                             <Button size="sm" className="w-full mt-4">
                                 Start New Campaigns

@@ -149,15 +149,15 @@ export default function Home() {
                         <div className="flex justify-between text-sm">
                           <span className="font-medium">
                             {i === 1
-                              ? "3.75 ETH"
+                              ? "3.75 MSC"
                               : i === 2
-                              ? "2.25 ETH"
-                              : "3 ETH"}{" "}
+                              ? "2.25 MSC"
+                              : "3 MSC"}{" "}
                             raised
                           </span>
                           <span className="text-muted-foreground">
                             {i === 1 ? "75%" : i === 2 ? "45%" : "60%"} of{" "}
-                            {i === 1 ? "5 ETH" : "5 ETH"}
+                            {i === 1 ? "5 MSC" : "5 MSC"}
                           </span>
                         </div>
                       </div>
@@ -232,11 +232,11 @@ export default function Home() {
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="font-medium">
-                                  {progress.toFixed(2)} ETH raised
+                                  {progress.toFixed(2)} MSC raised
                                 </span>
                                 <span className="text-muted-foreground">
                                   {progressPercentage.toFixed(0)}% of{" "}
-                                  {fundingGoal} ETH
+                                  {fundingGoal} MSC
                                 </span>
                               </div>
                             </div>

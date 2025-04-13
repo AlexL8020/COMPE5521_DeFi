@@ -16,10 +16,10 @@ export default function CampaignPage({ params }: { params: { id: string } }) {
 
   const { data, isLoading, error } = useGetMergedCampaigns()
   // Unwrap the params Promise using React.use()
-  const resolvedParams = React.use(params);
+  const resolvedParams = React.use(params as any);
 
   // Now access properties on the resolved object
-  const postId = resolvedParams.id;
+  const postId = resolvedParams?.id as any;
 
 
   if (isLoading) {

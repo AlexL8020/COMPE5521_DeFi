@@ -61,6 +61,7 @@ async function main() {
     // Define specific ABIs to copy
     const filesToCopy = [
       "CrowdfundingPlatform.sol/CrowdfundingPlatform.json",
+      "MockStableCoin.sol/MockStableCoin.json"
       // Add other ABIs if needed, e.g., "MockStableCoin.sol/MockStableCoin.json"
     ];
 
