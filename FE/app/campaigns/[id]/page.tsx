@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { API_CONFIG } from '../../API'; // Your API config file
 import { useGetMergedCampaigns } from '@/query/useForCampaigns';
 import React from 'react';
+import { useUserProfile } from "@/query/useForUser";
 
 export default function CampaignPage({ params }: { params: { id: string } }) {
 
@@ -39,7 +40,9 @@ export default function CampaignPage({ params }: { params: { id: string } }) {
   const percentFunded = fundingGoal > 0 ? Math.min((progress / fundingGoal) * 100, 100) : 0;
   const daysLeft = Math.floor((new Date((targetCampaign?.deadline || 0) * 1000).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-  console.log("---------------targetCampaign:", targetCampaign)
+  // console.log("---------------targetCampaign:", )
+
+  const { data: creator } = useUserProfile(targetCampaign?.mongoCreatorWalletAddress || "")
   return (
     <div className="container py-8">
       <div className="flex justify-end mb-4">
@@ -61,14 +64,14 @@ export default function CampaignPage({ params }: { params: { id: string } }) {
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/placeholder.svg?text=AJ" />
-                <AvatarFallback>{targetCampaign?.creator?.charAt(0) || 'A'}</AvatarFallback>
+                <AvatarFallback>{creator?.user?.name?.charAt(0) || 'A'}</AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium">{targetCampaign?.creator}</span>
+              <span className="text-sm font-medium">{creator?.user?.name ?? "--"}</span>
             </div>
             <Badge variant="outline">{targetCampaign?.category}</Badge>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />
-              <span>{targetCampaign?.metadataCreatedAt as string}</span>
+              <span>{targetCampaign?.metadataCreatedAt as any}</span>
             </div>
           </div>
 
@@ -162,7 +165,7 @@ export default function CampaignPage({ params }: { params: { id: string } }) {
                 </div>
                 <div>
                   <div className="font-medium">Campaign Started</div>
-                  <div className="text-sm text-muted-foreground">{targetCampaign?.metadataCreatedAt as string}</div>
+                  <div className="text-sm text-muted-foreground">{targetCampaign?.metadataCreatedAt as any}</div>
                 </div>
               </div>
               <div className="flex gap-3">

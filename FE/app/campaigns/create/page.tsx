@@ -1119,7 +1119,6 @@ function FundingAndReviewStep({
           </Button>
         </div>
       </CardFooter>
-      <div>activeFrontendTrackerId: {activeFrontendTrackerId}</div>
 
     </Card>
   );

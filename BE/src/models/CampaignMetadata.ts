@@ -82,12 +82,12 @@ const campaignMetadataSchema: Schema<ICampaignMetadata> = new Schema(
   }
 );
 
-// Indexing
-campaignMetadataSchema.index({ frontendTrackerId: 1 }); // Already added via 'index: true' above, but explicit doesn't hurt
-campaignMetadataSchema.index({ creatorWalletAddress: 1 });
-campaignMetadataSchema.index({ category: 1 });
-campaignMetadataSchema.index({ fundingGoal: 1 });
-campaignMetadataSchema.index({ title: "text", description: "text" });
+// // Indexing
+// campaignMetadataSchema.index({ frontendTrackerId: 1 }); // Already added via 'index: true' above, but explicit doesn't hurt
+// campaignMetadataSchema.index({ creatorWalletAddress: 1 });
+// campaignMetadataSchema.index({ category: 1 });
+// campaignMetadataSchema.index({ fundingGoal: 1 });
+// campaignMetadataSchema.index({ title: "text", description: "text" });
 
 const CampaignMetadata: Model<ICampaignMetadata> =
   mongoose.model<ICampaignMetadata>(

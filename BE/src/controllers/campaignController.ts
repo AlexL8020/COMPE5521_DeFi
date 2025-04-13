@@ -161,14 +161,25 @@ export const campaignController = {
           .json({ message: "Invalid duration format or value (must be at least 1)." });
         return
       }
+      // const { contractAddress, ...rest } = req.body;
 
       // --- 5. Create and Save Metadata Document ---
       const campaignMetadata = new CampaignMetadata({
-        ...req.body,
-        creatorWalletAddress: creatorWalletAddress,
+        // contractAddress,
+        contractAddress: `0x${Math.random().toString(16).slice(2, 42)}`, // Placeholder for contract address
+        frontendTrackerId: req.body.frontendTrackerId,
+        creatorWalletAddress,
+        creator: req.user?.id, // Use the authenticated user's ID
+        title,
         description: shortDescription,
-        imageUrl: imageBase64Data,
-        contractAddress: req.body.contractAddress,
+        fullDescription,
+        imageUrl: imageBase64Data, // Store Base64 data directly
+        videoUrl: req.body.videoUrl || null,
+        category,
+        timeline,
+        aboutYou,
+        fundingGoal,
+        duration,
       });
 
       await campaignMetadata.save(); // Mongoose validation runs. MongoDB will check actual BSON size limit here.
@@ -185,7 +196,7 @@ export const campaignController = {
       return
 
     } catch (error: any) {
-      console.error("Error saving metadata:", error);
+      console.error("Controller - Error saving metadata:", error);
 
       // Keep the check for the actual MongoDB error as a fallback
       if (error.message && error.message.includes("max BSON size")) {
