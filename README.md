@@ -39,6 +39,8 @@ This document outlines the steps to set up the blockchain, backend server, and r
         ```
     *   This script will also copy necessary ABI files to the frontend project.
 
+    there are output address of the coin and campaign smart contract address in the log after running the deploy script. Please set up .env for both FE and BE
+
 ## 2. Backend Server and Database Setup
 
 This section details setting up the Node.js backend server and MongoDB for managing off-chain data. You can choose either Docker-based setup OR manual setup.
